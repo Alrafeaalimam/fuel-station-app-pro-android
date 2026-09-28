@@ -1,0 +1,104 @@
+name: Android Release Build & Publish
+
+on:
+  push:
+    branches: [ main ]
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build Signed Android APK & Bundle
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Java JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+          cache: 'gradle'
+
+      - name: Setup Flutter SDK
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          cache: true
+
+      - name: Verify Environment
+        run: |
+          java -version
+          flutter --version
+
+      - name: Install Dependencies
+        run: flutter pub get
+
+      - name: Run Full Test Suite
+        run: flutter test
+
+      - name: Setup Keystore & Signing Properties
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: |
+          echo "$KEYSTORE_BASE64" | base64 --decode > android/app/upload-keystore.jks
+          cat <<EOF > android/key.properties
+          storePassword=$KEYSTORE_PASSWORD
+          keyPassword=$KEY_PASSWORD
+          keyAlias=$KEY_ALIAS
+          storeFile=upload-keystore.jks
+          EOF
+
+      - name: Build Release APK
+        run: flutter build apk --release
+
+      - name: Build Release App Bundle
+        run: flutter build appbundle --release
+
+      - name: Prepare Release Artifacts
+        run: |
+          mkdir -p release_artifacts
+          cp build/app/outputs/flutter-apk/app-release.apk release_artifacts/FuelStationPro-v1.apk
+          cp build/app/outputs/bundle/release/app-release.aab release_artifacts/FuelStationPro-v1.aab
+          ls -lh release_artifacts/
+
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: fuel-station-pro-android-release
+          path: release_artifacts/*
+
+      - name: Publish GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG_NAME="v1.0.0"
+          if [[ "${{ github.ref }}" == refs/tags/* ]]; then
+            TAG_NAME="${{ github.ref_name }}"
+          fi
+
+          NOTES="### نظام إدارة محطة الوقود Pro - النسخة المستقلة للأندرويد (APK)
+
+          ✅ إصدار موقّع رسمياً وجاهز للتشغيل والإنتاج الميداني
+          - **ملف الـ APK المباشر:** \`FuelStationPro-v1.apk\`
+          - **ملف حزمة التطبيق (App Bundle):** \`FuelStationPro-v1.aab\`
+          - **اسم التطبيق على الهاتف:** نظام إدارة محطة الوقود
+          - **معرّف الحزمة:** \`com.alrafea.fuel_station_pro\`
+          - **المميزات:** واجهة متجاوبة بالكامل للهواتف والشاشات الصغيرة، درج تنقل جانبي Drawer، جداول قابلة للتمرير الأفقي، طباعة وتصدير PDF بدون إنترنت بالخط العربي، مشاركة النسخ الاحتياطي عبر Share Sheet، وحماية الترخيص ببصمة الجهاز."
+
+          # Delete existing release/tag with same name if needed to overwrite, or create release
+          gh release view "$TAG_NAME" >/dev/null 2>&1 && gh release delete "$TAG_NAME" --cleanup-tag --yes || true
+          gh release create "$TAG_NAME" \
+            release_artifacts/FuelStationPro-v1.apk \
+            release_artifacts/FuelStationPro-v1.aab \
+            --title "Fuel Station Pro Android $TAG_NAME" \
+            --notes "$NOTES"
