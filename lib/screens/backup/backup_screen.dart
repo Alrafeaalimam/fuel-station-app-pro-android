@@ -144,8 +144,8 @@ class _BackupScreenState extends State<BackupScreen> {
         type: FileType.any,
       );
 
-      if (picked == null || picked.files.isEmpty || picked.files.single.path == null) return;
-      filePathToRestore = picked.files.single.path;
+      if (picked == null || picked.isEmpty || picked.first.path == null) return;
+      filePathToRestore = picked.first.path;
     }
 
     if (filePathToRestore == null || !mounted) return;
