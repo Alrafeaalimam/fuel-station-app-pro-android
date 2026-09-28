@@ -162,12 +162,13 @@ void main() {
       final deviceCode = await LicenseService.getDeviceCode();
       print('-> معرف الجهاز الفعلي: $deviceCode');
 
+      final licenseToolDir = p.join(Directory.current.path, 'license_keygen_tool');
       // Run Python script to generate key via admin_dashboard logic
       final result = await Process.run('python3', [
         '-c',
         '''
 import sys
-sys.path.append('/data/data/com.termux/files/home/fuel_station_app_pro/license_keygen_tool')
+sys.path.insert(0, '$licenseToolDir')
 import admin_dashboard
 
 key = admin_dashboard.generate_activation_key("$deviceCode")
@@ -251,9 +252,10 @@ print(key)
       final oldDevice = 'A3F9-K2M1';
       final newDevice = 'B7C4-M9X2';
 
+      final licenseToolDir = p.join(Directory.current.path, 'license_keygen_tool');
       final pyScript = '''
 import sys
-sys.path.append('/data/data/com.termux/files/home/fuel_station_app_pro/license_keygen_tool')
+sys.path.insert(0, '$licenseToolDir')
 import admin_dashboard
 
 admin_dashboard.init_db()
