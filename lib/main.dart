@@ -26,7 +26,9 @@ import 'config/station_config.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/main_navigation_shell.dart';
 import 'screens/license/license_screen.dart';
+import 'screens/onboarding/onboarding_screen.dart';
 import 'services/license_service.dart';
+import 'services/onboarding_service.dart';
 import 'theme/app_theme.dart';
 
 void main() async {
@@ -34,6 +36,9 @@ void main() async {
   await StationConfig.loadStationName();
   try {
     await LicenseService.checkLicenseStatus();
+  } catch (_) {}
+  try {
+    await OnboardingService.loadOnboardingStatus();
   } catch (_) {}
   runApp(const FuelStationApp());
 }
@@ -128,12 +133,20 @@ class FuelStationApp extends StatelessWidget {
                     return const LicenseScreen(isDismissible: false);
                   }
 
-                  return BlocBuilder<AuthBloc, AuthState>(
-                    builder: (context, state) {
-                      if (state is AuthAuthenticated) {
-                        return const MainNavigationShell();
+                  return ValueListenableBuilder<bool>(
+                    valueListenable: OnboardingService.hasSeenOnboardingNotifier,
+                    builder: (context, hasSeenOnboarding, _) {
+                      if (!hasSeenOnboarding) {
+                        return const OnboardingScreen();
                       }
-                      return const LoginScreen();
+                      return BlocBuilder<AuthBloc, AuthState>(
+                        builder: (context, state) {
+                          if (state is AuthAuthenticated) {
+                            return const MainNavigationShell();
+                          }
+                          return const LoginScreen();
+                        },
+                      );
                     },
                   );
                 },

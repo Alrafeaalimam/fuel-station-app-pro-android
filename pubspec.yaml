@@ -41,6 +41,7 @@ flutter:
     - assets/fonts/NotoNaskhArabic-Regular.ttf
     - assets/fonts/NotoNaskhArabic-Bold.ttf
     - assets/icons/app_icon.png
+    - assets/images/onboarding/
 
   fonts:
     - family: NotoNaskhArabic
