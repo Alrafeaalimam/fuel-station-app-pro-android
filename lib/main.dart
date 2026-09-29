@@ -27,12 +27,23 @@ import 'screens/auth/login_screen.dart';
 import 'screens/main_navigation_shell.dart';
 import 'screens/license/license_screen.dart';
 import 'screens/onboarding/onboarding_screen.dart';
+import 'package:flutter/services.dart';
 import 'services/license_service.dart';
 import 'services/onboarding_service.dart';
 import 'theme/app_theme.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  SystemChrome.setSystemUIOverlayStyle(
+    const SystemUiOverlayStyle(
+      statusBarColor: Colors.transparent,
+      statusBarIconBrightness: Brightness.light,
+      statusBarBrightness: Brightness.dark,
+      systemNavigationBarColor: AppTheme.darkBg,
+      systemNavigationBarIconBrightness: Brightness.light,
+      systemNavigationBarDividerColor: Colors.transparent,
+    ),
+  );
   await StationConfig.loadStationName();
   try {
     await LicenseService.checkLicenseStatus();

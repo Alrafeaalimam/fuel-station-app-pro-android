@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../bloc/auth/auth_bloc.dart';
 import '../bloc/auth/auth_event.dart';
@@ -146,10 +147,16 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
       context: context,
       builder: (dialogCtx) => AlertDialog(
         title: const Row(
+          mainAxisSize: MainAxisSize.min,
           children: [
             Icon(Icons.edit_note_rounded, color: AppTheme.primaryBlue),
             SizedBox(width: 8),
-            Text('تعديل اسم المحطة'),
+            Flexible(
+              child: Text(
+                'تعديل اسم المحطة',
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
           ],
         ),
         content: Column(
@@ -258,143 +265,207 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
     final screenWidth = MediaQuery.of(context).size.width;
     final isMobile = screenWidth < 768;
 
-    return Scaffold(
-      key: _scaffoldKey,
-      drawer: isMobile
-          ? Drawer(
-              backgroundColor: AppTheme.sidebarBg,
-              child: SafeArea(
-                child: _buildSidebarContent(context, currentUser, isCollapsed: false, isDrawer: true),
-              ),
-            )
-          : null,
-      bottomNavigationBar: isMobile
-          ? Container(
-              decoration: const BoxDecoration(
-                border: Border(top: BorderSide(color: AppTheme.darkBorder, width: 1)),
-              ),
-              child: BottomNavigationBar(
-                currentIndex: _getBottomNavIndex(_selectedIndex),
-                onTap: _onBottomNavTapped,
-                items: const [
-                  BottomNavigationBarItem(
-                    icon: Icon(Icons.dashboard_rounded),
-                    label: 'الرئيسية',
-                  ),
-                  BottomNavigationBarItem(
-                    icon: Icon(Icons.lock_clock_rounded),
-                    label: 'المبيعات',
-                  ),
-                  BottomNavigationBarItem(
-                    icon: Icon(Icons.storage_rounded),
-                    label: 'الخزانات',
-                  ),
-                  BottomNavigationBarItem(
-                    icon: Icon(Icons.assessment_rounded),
-                    label: 'التقارير',
-                  ),
-                  BottomNavigationBarItem(
-                    icon: Icon(Icons.menu_rounded),
-                    label: 'المزيد',
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+        statusBarIconBrightness: isDark ? Brightness.light : Brightness.dark,
+        statusBarBrightness: isDark ? Brightness.dark : Brightness.light,
+        systemNavigationBarColor: isDark ? AppTheme.darkBg : Colors.white,
+        systemNavigationBarIconBrightness: isDark ? Brightness.light : Brightness.dark,
+        systemNavigationBarDividerColor: Colors.transparent,
+      ),
+      child: Scaffold(
+        key: _scaffoldKey,
+        drawer: isMobile
+            ? Drawer(
+                backgroundColor: AppTheme.sidebarBg,
+                child: SafeArea(
+                  child: _buildSidebarContent(context, currentUser, isCollapsed: false, isDrawer: true),
+                ),
+              )
+            : null,
+        bottomNavigationBar: isMobile
+            ? Container(
+                decoration: const BoxDecoration(
+                  border: Border(top: BorderSide(color: AppTheme.darkBorder, width: 1)),
+                ),
+                child: BottomNavigationBar(
+                  currentIndex: _getBottomNavIndex(_selectedIndex),
+                  onTap: _onBottomNavTapped,
+                  items: const [
+                    BottomNavigationBarItem(
+                      icon: Icon(Icons.dashboard_rounded),
+                      label: 'الرئيسية',
+                    ),
+                    BottomNavigationBarItem(
+                      icon: Icon(Icons.lock_clock_rounded),
+                      label: 'المبيعات',
+                    ),
+                    BottomNavigationBarItem(
+                      icon: Icon(Icons.storage_rounded),
+                      label: 'الخزانات',
+                    ),
+                    BottomNavigationBarItem(
+                      icon: Icon(Icons.assessment_rounded),
+                      label: 'التقارير',
+                    ),
+                    BottomNavigationBarItem(
+                      icon: Icon(Icons.menu_rounded),
+                      label: 'المزيد',
+                    ),
+                  ],
+                ),
+              )
+            : null,
+        body: Row(
+          children: [
+            // Sidebar Navigation (Desktop / Tablet)
+            if (!isMobile) _buildSidebar(context, currentUser),
+            // Main Content View
+            Expanded(
+              child: Column(
+                children: [
+                  // Top App Header (Device/Platform Adaptive)
+                  _buildTopHeader(context, currentUser, isMobile: isMobile),
+                  // Trial Warning Banner (Compact integrated bar directly below header)
+                  _buildTrialBanner(context, isMobile: isMobile),
+                  // Screen Content
+                  Expanded(
+                    child: AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 200),
+                      child: IndexedStack(
+                        key: ValueKey<int>(_selectedIndex),
+                        index: _selectedIndex,
+                        children: screens,
+                      ),
+                    ),
                   ),
                 ],
               ),
-            )
-          : null,
-      body: Row(
-        children: [
-          // Sidebar Navigation (Desktop / Tablet)
-          if (!isMobile) _buildSidebar(context, currentUser),
-          // Main Content View
-          Expanded(
-            child: Column(
-              children: [
-                // Top App Header
-                _buildTopHeader(context, currentUser, isMobile: isMobile),
-                // Trial Warning Banner (Sleek Pill)
-                _buildTrialBanner(context),
-                // Screen Content
-                Expanded(
-                  child: AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 200),
-                    child: IndexedStack(
-                      key: ValueKey<int>(_selectedIndex),
-                      index: _selectedIndex,
-                      children: screens,
-                    ),
-                  ),
-                ),
-              ],
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
 
   Widget _buildTopHeader(BuildContext context, UserModel? user, {required bool isMobile}) {
+    if (isMobile) {
+      return _buildMobileTopHeader(context, user);
+    }
+    return _buildDesktopTopHeader(context, user);
+  }
+
+  Widget _buildMobileTopHeader(BuildContext context, UserModel? user) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Container(
-      height: 58,
-      padding: EdgeInsets.symmetric(horizontal: isMobile ? 8 : 20),
-      decoration: BoxDecoration(
-        color: isDark ? AppTheme.darkBg : Colors.white,
-        border: Border(
-          bottom: BorderSide(color: isDark ? AppTheme.darkBorder : Colors.grey.shade200),
-        ),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Expanded(
-            child: Row(
-              children: [
-                if (isMobile)
-                  IconButton(
-                    icon: Icon(Icons.menu_rounded, color: isDark ? AppTheme.textLight : AppTheme.primaryNavy),
-                    tooltip: 'القائمة الرئيسية',
-                    onPressed: () => _scaffoldKey.currentState?.openDrawer(),
+      color: isDark ? AppTheme.darkBg : Colors.white,
+      child: SafeArea(
+        top: true,
+        bottom: false,
+        left: true,
+        right: true,
+        child: Container(
+          height: 56,
+          padding: const EdgeInsets.symmetric(horizontal: 8),
+          decoration: BoxDecoration(
+            color: isDark ? AppTheme.darkBg : Colors.white,
+            border: Border(
+              bottom: BorderSide(
+                color: isDark ? AppTheme.darkBorder : Colors.grey.shade200,
+                width: 1,
+              ),
+            ),
+          ),
+          child: Row(
+            children: [
+              // RIGHT (Start in RTL): Hamburger Button (opens existing Drawer)
+              SizedBox(
+                width: 48,
+                height: 48,
+                child: IconButton(
+                  icon: Icon(
+                    Icons.menu_rounded,
+                    color: isDark ? AppTheme.textLight : AppTheme.primaryNavy,
+                    size: 24,
                   ),
-                Flexible(
+                  tooltip: 'القائمة الرئيسية',
+                  constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
+                  padding: const EdgeInsets.all(12),
+                  splashRadius: 24,
+                  onPressed: () => _scaffoldKey.currentState?.openDrawer(),
+                ),
+              ),
+
+              // CENTER in RTL: Station Brand Identity (responsively centered)
+              Expanded(
+                child: Center(
                   child: ValueListenableBuilder<String>(
                     valueListenable: StationConfig.stationNameNotifier,
                     builder: (context, stationName, _) {
+                      final displayName = stationName.trim().isNotEmpty
+                          ? stationName.trim()
+                          : 'محطة وقود أنموذجية';
+
                       return InkWell(
                         borderRadius: BorderRadius.circular(8),
                         onTap: user?.isManager == true
                             ? () => _showEditStationNameDialog(context)
                             : null,
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                          decoration: BoxDecoration(
-                            color: AppTheme.primaryBlue.withValues(alpha: isDark ? 0.18 : 0.1),
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(
-                              color: AppTheme.primaryBlue.withValues(alpha: isDark ? 0.35 : 0.2),
-                            ),
-                          ),
-                          child: Row(
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                          child: Column(
                             mainAxisSize: MainAxisSize.min,
+                            mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              const Icon(Icons.local_gas_station_rounded, size: 16, color: AppTheme.primaryCyan),
-                              const SizedBox(width: 5),
-                              Flexible(
-                                child: Text(
-                                  stationName,
-                                  overflow: TextOverflow.ellipsis,
-                                  maxLines: 1,
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    color: isDark ? AppTheme.textLight : AppTheme.primaryBlue,
-                                    fontSize: 12.5,
+                              Row(
+                                mainAxisSize: MainAxisSize.min,
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  const Icon(
+                                    Icons.local_gas_station_rounded,
+                                    size: 15,
+                                    color: AppTheme.primaryCyan,
                                   ),
+                                  const SizedBox(width: 5),
+                                  Flexible(
+                                    child: Text(
+                                      displayName,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      textAlign: TextAlign.center,
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        color: isDark ? AppTheme.textLight : AppTheme.primaryNavy,
+                                        fontSize: 13.5,
+                                      ),
+                                    ),
+                                  ),
+                                  if (user?.isManager == true) ...[
+                                    const SizedBox(width: 4),
+                                    Icon(
+                                      Icons.edit_outlined,
+                                      size: 12,
+                                      color: isDark ? AppTheme.primaryCyan : AppTheme.primaryBlue,
+                                    ),
+                                  ],
+                                ],
+                              ),
+                              const SizedBox(height: 1),
+                              const Text(
+                                'نظام إدارة المحطة',
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  fontSize: 9.5,
+                                  color: AppTheme.textMuted,
+                                  fontWeight: FontWeight.normal,
                                 ),
                               ),
-                              if (user?.isManager == true) ...[
-                                const SizedBox(width: 4),
-                                const Icon(Icons.edit_outlined, size: 13, color: AppTheme.primaryCyan),
-                              ],
                             ],
                           ),
                         ),
@@ -402,101 +473,341 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
                     },
                   ),
                 ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 6),
-          Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // User info badge
-              Container(
-                padding: EdgeInsets.symmetric(horizontal: isMobile ? 6 : 10, vertical: 4),
-                decoration: BoxDecoration(
-                  color: isDark ? AppTheme.darkCard : Colors.grey.shade100,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: isDark ? AppTheme.darkBorder : Colors.transparent),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    CircleAvatar(
-                      radius: 12,
-                      backgroundColor: user?.isManager == true
-                          ? AppTheme.primaryBlue
-                          : AppTheme.dieselColor,
-                      child: Text(
-                        user?.name.isNotEmpty == true ? user!.name.substring(0, 1) : 'م',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 11,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                    if (!isMobile) ...[
-                      const SizedBox(width: 6),
-                      Text(
-                        user?.name ?? 'المستخدم',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 12,
-                          color: isDark ? AppTheme.textLight : AppTheme.textDark,
-                        ),
-                      ),
-                      const SizedBox(width: 4),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: user?.isManager == true
-                              ? Colors.indigo.withValues(alpha: 0.15)
-                              : Colors.orange.withValues(alpha: 0.15),
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                        child: Text(
-                          user?.roleArabic ?? '',
-                          style: TextStyle(
-                            fontSize: 10,
-                            fontWeight: FontWeight.bold,
-                            color: user?.isManager == true ? AppTheme.primaryCyan : Colors.deepOrange,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
               ),
-              IconButton(
-                padding: const EdgeInsets.all(6),
-                constraints: const BoxConstraints(minWidth: 44, minHeight: 44),
-                icon: Icon(Icons.vpn_key_rounded, size: 18, color: isDark ? AppTheme.textMuted : AppTheme.primaryNavy),
-                tooltip: 'تغيير كلمة المرور',
-                onPressed: () {
-                  if (user != null) {
-                    showDialog(
-                      context: context,
-                      builder: (ctx) => ChangePasswordDialog(currentUser: user),
-                    );
-                  }
-                },
-              ),
-              IconButton(
-                padding: const EdgeInsets.all(6),
-                constraints: const BoxConstraints(minWidth: 44, minHeight: 44),
-                icon: const Icon(Icons.logout_rounded, size: 18, color: AppTheme.dangerRed),
-                tooltip: 'تسجيل الخروج',
-                onPressed: () {
-                  context.read<AuthBloc>().add(AuthLogoutRequested());
-                },
-              ),
+
+              // LEFT (End in RTL): User Profile Action Menu (compact 48x48)
+              _buildMobileUserAction(context, user, isDark),
             ],
           ),
-        ],
+        ),
       ),
     );
   }
 
-  Widget _buildTrialBanner(BuildContext context) {
+  Widget _buildMobileUserAction(BuildContext context, UserModel? user, bool isDark) {
+    return SizedBox(
+      width: 48,
+      height: 48,
+      child: Center(
+        child: Theme(
+          data: Theme.of(context).copyWith(
+            cardColor: isDark ? AppTheme.darkCard : Colors.white,
+            popupMenuTheme: PopupMenuThemeData(
+              color: isDark ? AppTheme.darkCard : Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(14),
+                side: BorderSide(
+                  color: isDark ? AppTheme.darkBorder : Colors.grey.shade300,
+                  width: 1.2,
+                ),
+              ),
+              elevation: 8,
+            ),
+          ),
+          child: PopupMenuButton<String>(
+            tooltip: 'بيانات الحساب',
+            padding: EdgeInsets.zero,
+            offset: const Offset(0, 46),
+            position: PopupMenuPosition.under,
+            icon: Container(
+              width: 34,
+              height: 34,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: user?.isManager == true ? AppTheme.primaryBlue : AppTheme.dieselColor,
+                border: Border.all(
+                  color: user?.isManager == true
+                      ? AppTheme.primaryCyan.withValues(alpha: 0.7)
+                      : AppTheme.dieselColor.withValues(alpha: 0.7),
+                  width: 1.5,
+                ),
+              ),
+              alignment: Alignment.center,
+              child: Text(
+                user?.name.isNotEmpty == true ? user!.name.substring(0, 1) : 'م',
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 13,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+            itemBuilder: (ctx) => [
+              PopupMenuItem<String>(
+                enabled: false,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Row(
+                      children: [
+                        CircleAvatar(
+                          radius: 12,
+                          backgroundColor: user?.isManager == true
+                              ? AppTheme.primaryBlue
+                              : AppTheme.dieselColor,
+                          child: Text(
+                            user?.name.isNotEmpty == true ? user!.name.substring(0, 1) : 'م',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            user?.name ?? 'المستخدم',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 13,
+                              color: isDark ? AppTheme.textLight : AppTheme.textDark,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: user?.isManager == true
+                            ? AppTheme.primaryBlue.withValues(alpha: 0.2)
+                            : AppTheme.dieselColor.withValues(alpha: 0.2),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Text(
+                        user?.roleArabic ?? '',
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                          color: user?.isManager == true ? AppTheme.primaryCyan : AppTheme.dieselColor,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const PopupMenuDivider(height: 1),
+              PopupMenuItem<String>(
+                value: 'password',
+                height: 42,
+                child: Row(
+                  children: [
+                    const Icon(Icons.vpn_key_rounded, size: 17, color: AppTheme.primaryCyan),
+                    const SizedBox(width: 8),
+                    Text(
+                      'تغيير كلمة المرور',
+                      style: TextStyle(
+                        fontSize: 12.5,
+                        color: isDark ? AppTheme.textLight : AppTheme.textDark,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const PopupMenuItem<String>(
+                value: 'logout',
+                height: 42,
+                child: Row(
+                  children: [
+                    Icon(Icons.logout_rounded, size: 17, color: AppTheme.dangerRed),
+                    SizedBox(width: 8),
+                    Text(
+                      'تسجيل الخروج',
+                      style: TextStyle(fontSize: 12.5, color: AppTheme.dangerRed),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+            onSelected: (val) {
+              if (val == 'password') {
+                if (user != null) {
+                  showDialog(
+                    context: context,
+                    builder: (dialogCtx) => ChangePasswordDialog(currentUser: user),
+                  );
+                }
+              } else if (val == 'logout') {
+                context.read<AuthBloc>().add(AuthLogoutRequested());
+              }
+            },
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDesktopTopHeader(BuildContext context, UserModel? user) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return Container(
+      color: isDark ? AppTheme.darkBg : Colors.white,
+      child: SafeArea(
+        top: true,
+        bottom: false,
+        child: Container(
+          height: 58,
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          decoration: BoxDecoration(
+            color: isDark ? AppTheme.darkBg : Colors.white,
+            border: Border(
+              bottom: BorderSide(
+                color: isDark ? AppTheme.darkBorder : Colors.grey.shade200,
+              ),
+            ),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Expanded(
+                child: Row(
+                  children: [
+                    Flexible(
+                      child: ValueListenableBuilder<String>(
+                        valueListenable: StationConfig.stationNameNotifier,
+                        builder: (context, stationName, _) {
+                          return InkWell(
+                            borderRadius: BorderRadius.circular(8),
+                            onTap: user?.isManager == true
+                                ? () => _showEditStationNameDialog(context)
+                                : null,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                              decoration: BoxDecoration(
+                                color: AppTheme.primaryBlue.withValues(alpha: isDark ? 0.18 : 0.1),
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(
+                                  color: AppTheme.primaryBlue.withValues(alpha: isDark ? 0.35 : 0.2),
+                                ),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Icon(Icons.local_gas_station_rounded, size: 16, color: AppTheme.primaryCyan),
+                                  const SizedBox(width: 5),
+                                  Flexible(
+                                    child: Text(
+                                      stationName,
+                                      overflow: TextOverflow.ellipsis,
+                                      maxLines: 1,
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        color: isDark ? AppTheme.textLight : AppTheme.primaryBlue,
+                                        fontSize: 12.5,
+                                      ),
+                                    ),
+                                  ),
+                                  if (user?.isManager == true) ...[
+                                    const SizedBox(width: 4),
+                                    const Icon(Icons.edit_outlined, size: 13, color: AppTheme.primaryCyan),
+                                  ],
+                                ],
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 6),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // User info badge
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: isDark ? AppTheme.darkCard : Colors.grey.shade100,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: isDark ? AppTheme.darkBorder : Colors.transparent),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        CircleAvatar(
+                          radius: 12,
+                          backgroundColor: user?.isManager == true
+                              ? AppTheme.primaryBlue
+                              : AppTheme.dieselColor,
+                          child: Text(
+                            user?.name.isNotEmpty == true ? user!.name.substring(0, 1) : 'م',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 11,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          user?.name ?? 'المستخدم',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 12,
+                            color: isDark ? AppTheme.textLight : AppTheme.textDark,
+                          ),
+                        ),
+                        const SizedBox(width: 4),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: user?.isManager == true
+                                ? Colors.indigo.withValues(alpha: 0.15)
+                                : Colors.orange.withValues(alpha: 0.15),
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: Text(
+                            user?.roleArabic ?? '',
+                            style: TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                              color: user?.isManager == true ? AppTheme.primaryCyan : Colors.deepOrange,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  IconButton(
+                    padding: const EdgeInsets.all(6),
+                    constraints: const BoxConstraints(minWidth: 44, minHeight: 44),
+                    icon: Icon(Icons.vpn_key_rounded, size: 18, color: isDark ? AppTheme.textMuted : AppTheme.primaryNavy),
+                    tooltip: 'تغيير كلمة المرور',
+                    onPressed: () {
+                      if (user != null) {
+                        showDialog(
+                          context: context,
+                          builder: (ctx) => ChangePasswordDialog(currentUser: user),
+                        );
+                      }
+                    },
+                  ),
+                  IconButton(
+                    padding: const EdgeInsets.all(6),
+                    constraints: const BoxConstraints(minWidth: 44, minHeight: 44),
+                    icon: const Icon(Icons.logout_rounded, size: 18, color: AppTheme.dangerRed),
+                    tooltip: 'تسجيل الخروج',
+                    onPressed: () {
+                      context.read<AuthBloc>().add(AuthLogoutRequested());
+                    },
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTrialBanner(BuildContext context, {required bool isMobile}) {
     return ValueListenableBuilder<LicenseInfo>(
       valueListenable: LicenseService.licenseNotifier,
       builder: (context, info, _) {
@@ -515,28 +826,28 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
           dayText = 'متبقي $days أيام';
         }
 
+        final accentColor = isUrgent ? AppTheme.dangerRed : AppTheme.dieselColor;
+
         return Container(
-          margin: const EdgeInsets.fromLTRB(12, 6, 12, 4),
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          height: 40,
+          padding: EdgeInsets.symmetric(horizontal: isMobile ? 12 : 20),
           decoration: BoxDecoration(
-            color: isDark ? AppTheme.darkCard : const Color(0xFFE0F2FE),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: isUrgent
-                  ? AppTheme.dangerRed.withValues(alpha: 0.5)
-                  : AppTheme.primaryBlue.withValues(alpha: 0.4),
-              width: 1.2,
+            color: isDark
+                ? accentColor.withValues(alpha: 0.10)
+                : (isUrgent ? const Color(0xFFFEE2E2) : const Color(0xFFFEF3C7)),
+            border: Border(
+              bottom: BorderSide(
+                color: isDark ? AppTheme.darkBorder : Colors.grey.shade300,
+                width: 1,
+              ),
             ),
           ),
           child: Row(
             children: [
-              Container(
-                width: 8,
-                height: 8,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: isUrgent ? AppTheme.dangerRed : AppTheme.primaryCyan,
-                ),
+              Icon(
+                isUrgent ? Icons.warning_amber_rounded : Icons.timer_outlined,
+                size: 16,
+                color: accentColor,
               ),
               const SizedBox(width: 8),
               Expanded(
@@ -545,28 +856,41 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    color: isDark ? AppTheme.textLight : AppTheme.primaryNavy,
+                    color: isUrgent
+                        ? AppTheme.dangerRed
+                        : (isDark ? AppTheme.textLight : AppTheme.textDark),
                     fontWeight: FontWeight.bold,
-                    fontSize: 12,
+                    fontSize: 11.5,
                   ),
                 ),
               ),
               const SizedBox(width: 8),
-              SizedBox(
-                height: 36,
-                child: ElevatedButton.icon(
-                  onPressed: () => _openActivationScreen(context),
-                  icon: const Icon(Icons.key_rounded, size: 14),
-                  label: const Text(
-                    'تفعيل الترخيص',
-                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
-                  ),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppTheme.primaryBlue,
-                    foregroundColor: Colors.white,
-                    minimumSize: const Size(110, 36),
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 0),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: () => _openActivationScreen(context),
+                  borderRadius: BorderRadius.circular(6),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                    decoration: BoxDecoration(
+                      color: AppTheme.primaryBlue,
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: const Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.vpn_key_rounded, size: 12, color: Colors.white),
+                        SizedBox(width: 4),
+                        Text(
+                          'تفعيل الترخيص',
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
