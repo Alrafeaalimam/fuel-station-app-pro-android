@@ -41,40 +41,42 @@ class _FuelPricesScreenState extends State<FuelPricesScreen> {
           builder: (context, setDialogState) {
             return AlertDialog(
               title: const Text('تسجيل تسعيرة وقود جديدة'),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'سيتم أرشفة السعر الحالي واعتماد السعر الجديد فوراً لجميع العمليات والورديات القادمة.',
-                    style: TextStyle(fontSize: 12, color: Colors.black54),
-                  ),
-                  const SizedBox(height: 16),
-                  DropdownButtonFormField<String>(
-                    initialValue: _selectedFuelType,
-                    decoration: const InputDecoration(labelText: 'نوع الوقود'),
-                    items: const [
-                      DropdownMenuItem(value: 'بنزين', child: Text('بنزين')),
-                      DropdownMenuItem(value: 'جازولين', child: Text('جازولين')),
-                    ],
-                    onChanged: (val) {
-                      if (val != null) {
-                        setDialogState(() {
-                          _selectedFuelType = val;
-                        });
-                      }
-                    },
-                  ),
-                  const SizedBox(height: 14),
-                  TextFormField(
-                    controller: _newPriceController,
-                    keyboardType: TextInputType.number,
-                    decoration: const InputDecoration(
-                      labelText: 'السعر الجديد للتر',
-                      suffixText: 'ج.س / لتر',
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'سيتم أرشفة السعر الحالي واعتماد السعر الجديد فوراً لجميع العمليات والورديات القادمة.',
+                      style: TextStyle(fontSize: 12, color: Colors.black54),
                     ),
-                  ),
-                ],
+                    const SizedBox(height: 16),
+                    DropdownButtonFormField<String>(
+                      initialValue: _selectedFuelType,
+                      decoration: const InputDecoration(labelText: 'نوع الوقود'),
+                      items: const [
+                        DropdownMenuItem(value: 'بنزين', child: Text('بنزين')),
+                        DropdownMenuItem(value: 'جازولين', child: Text('جازولين')),
+                      ],
+                      onChanged: (val) {
+                        if (val != null) {
+                          setDialogState(() {
+                            _selectedFuelType = val;
+                          });
+                        }
+                      },
+                    ),
+                    const SizedBox(height: 14),
+                    TextFormField(
+                      controller: _newPriceController,
+                      keyboardType: TextInputType.number,
+                      decoration: const InputDecoration(
+                        labelText: 'السعر الجديد للتر',
+                        suffixText: 'ج.س / لتر',
+                      ),
+                    ),
+                  ],
+                ),
               ),
               actions: [
                 TextButton(
@@ -111,25 +113,34 @@ class _FuelPricesScreenState extends State<FuelPricesScreen> {
     final authState = context.watch<AuthBloc>().state;
     final isManager = authState is AuthAuthenticated && authState.user.isManager;
     final userId = authState is AuthAuthenticated ? authState.user.id : 1;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isMobile = screenWidth < 600;
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text(
-          'إدارة وتسعير الوقود (التسعيرة الرسمية والسجل التاريخي)',
-          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+        title: Text(
+          isMobile ? 'تسعير الوقود' : 'إدارة وتسعير الوقود (التسعيرة الرسمية والسجل التاريخي)',
+          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
         ),
         actions: [
           if (isManager)
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-              child: ElevatedButton.icon(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppTheme.primaryNavy,
-                ),
-                onPressed: () => _showUpdatePriceDialog(context, userId),
-                icon: const Icon(Icons.add_chart_rounded, color: Colors.white),
-                label: const Text('تعديل / تحديث تسعيرة'),
-              ),
+              padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
+              child: isMobile
+                  ? IconButton(
+                      icon: const Icon(Icons.add_chart_rounded),
+                      tooltip: 'تعديل / تحديث تسعيرة',
+                      onPressed: () => _showUpdatePriceDialog(context, userId),
+                    )
+                  : ElevatedButton.icon(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppTheme.primaryNavy,
+                      ),
+                      onPressed: () => _showUpdatePriceDialog(context, userId),
+                      icon: const Icon(Icons.add_chart_rounded, color: Colors.white),
+                      label: const Text('تعديل / تحديث تسعيرة'),
+                    ),
             ),
         ],
       ),
@@ -161,42 +172,52 @@ class _FuelPricesScreenState extends State<FuelPricesScreen> {
             final dieselPrice = state.activePrices['جازولين']?.pricePerLiter ?? 0;
 
             return SingleChildScrollView(
-              padding: const EdgeInsets.all(24.0),
+              padding: EdgeInsets.all(isMobile ? 16.0 : 24.0),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   // Active Prices Cards
-                  const Text(
+                  Text(
                     'الأسعار الرسمية السارية حالياً',
                     style: TextStyle(
                       fontSize: 17,
                       fontWeight: FontWeight.bold,
-                      color: AppTheme.primaryNavy,
+                      color: isDark ? AppTheme.textLight : AppTheme.primaryNavy,
                     ),
                   ),
                   const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _buildActivePriceCard(
-                          'بنزين (Super)',
-                          benzinPrice,
-                          AppTheme.benzinColor,
-                          state.activePrices['بنزين']?.effectiveFrom,
-                          currencyFormat,
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: _buildActivePriceCard(
-                          'جازولين (Diesel)',
-                          dieselPrice,
-                          AppTheme.dieselColor,
-                          state.activePrices['جازولين']?.effectiveFrom,
-                          currencyFormat,
-                        ),
-                      ),
-                    ],
+                  LayoutBuilder(
+                    builder: (context, constraints) {
+                      final isNarrow = constraints.maxWidth < 600;
+                      final cardWidth = isNarrow ? constraints.maxWidth : (constraints.maxWidth - 16) / 2;
+
+                      return Wrap(
+                        spacing: 16,
+                        runSpacing: 16,
+                        children: [
+                          SizedBox(
+                            width: cardWidth,
+                            child: _buildActivePriceCard(
+                              'بنزين (Super)',
+                              benzinPrice,
+                              AppTheme.benzinColor,
+                              state.activePrices['بنزين']?.effectiveFrom,
+                              currencyFormat,
+                            ),
+                          ),
+                          SizedBox(
+                            width: cardWidth,
+                            child: _buildActivePriceCard(
+                              'جازولين (Diesel)',
+                              dieselPrice,
+                              AppTheme.dieselColor,
+                              state.activePrices['جازولين']?.effectiveFrom,
+                              currencyFormat,
+                            ),
+                          ),
+                        ],
+                      );
+                    },
                   ),
                   const SizedBox(height: 32),
 

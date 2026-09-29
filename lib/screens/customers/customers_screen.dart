@@ -62,50 +62,52 @@ class _CustomersScreenState extends State<CustomersScreen> {
           builder: (context, setDialogState) {
             return AlertDialog(
               title: Text(existingCustomer == null ? 'إضافة عميل / مؤسسة جديدة' : 'تعديل بيانات العميل'),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  TextFormField(
-                    controller: _nameController,
-                    decoration: const InputDecoration(labelText: 'اسم العميل أو الجهة'),
-                  ),
-                  const SizedBox(height: 12),
-                  DropdownButtonFormField<String>(
-                    initialValue: _customerType,
-                    decoration: const InputDecoration(labelText: 'نوع العميل'),
-                    items: const [
-                      DropdownMenuItem(value: 'زبون دائم', child: Text('زبون دائم')),
-                      DropdownMenuItem(value: 'مؤسسة حكومية', child: Text('مؤسسة حكومية (مطالبة شهرية)')),
-                    ],
-                    onChanged: (v) {
-                      if (v != null) {
-                        setDialogState(() {
-                          _customerType = v;
-                        });
-                      }
-                    },
-                  ),
-                  const SizedBox(height: 12),
-                  TextFormField(
-                    controller: _phoneController,
-                    decoration: const InputDecoration(labelText: 'رقم الهاتف / التواصل'),
-                  ),
-                  const SizedBox(height: 12),
-                  TextFormField(
-                    controller: _creditLimitController,
-                    keyboardType: TextInputType.number,
-                    enabled: canEditCreditLimit,
-                    decoration: InputDecoration(
-                      labelText: canEditCreditLimit
-                          ? 'السقف الائتماني المسموح به (ج.س)'
-                          : 'السقف الائتماني (صلاحية خاصة بالمدير فقط)',
-                      suffixText: 'ج.س',
-                      prefixIcon: canEditCreditLimit ? null : const Icon(Icons.lock_rounded, size: 18, color: Colors.grey),
-                      filled: !canEditCreditLimit,
-                      fillColor: canEditCreditLimit ? null : Colors.grey.shade100,
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    TextFormField(
+                      controller: _nameController,
+                      decoration: const InputDecoration(labelText: 'اسم العميل أو الجهة'),
                     ),
-                  ),
-                ],
+                    const SizedBox(height: 12),
+                    DropdownButtonFormField<String>(
+                      initialValue: _customerType,
+                      decoration: const InputDecoration(labelText: 'نوع العميل'),
+                      items: const [
+                        DropdownMenuItem(value: 'زبون دائم', child: Text('زبون دائم')),
+                        DropdownMenuItem(value: 'مؤسسة حكومية', child: Text('مؤسسة حكومية (مطالبة شهرية)')),
+                      ],
+                      onChanged: (v) {
+                        if (v != null) {
+                          setDialogState(() {
+                            _customerType = v;
+                          });
+                        }
+                      },
+                    ),
+                    const SizedBox(height: 12),
+                    TextFormField(
+                      controller: _phoneController,
+                      decoration: const InputDecoration(labelText: 'رقم الهاتف / التواصل'),
+                    ),
+                    const SizedBox(height: 12),
+                    TextFormField(
+                      controller: _creditLimitController,
+                      keyboardType: TextInputType.number,
+                      enabled: canEditCreditLimit,
+                      decoration: InputDecoration(
+                        labelText: canEditCreditLimit
+                            ? 'السقف الائتماني المسموح به (ج.س)'
+                            : 'السقف الائتماني (صلاحية خاصة بالمدير فقط)',
+                        suffixText: 'ج.س',
+                        prefixIcon: canEditCreditLimit ? null : const Icon(Icons.lock_rounded, size: 18, color: Colors.grey),
+                        filled: !canEditCreditLimit,
+                        fillColor: canEditCreditLimit ? null : Colors.grey.shade100,
+                      ),
+                    ),
+                  ],
+                ),
               ),
               actions: [
                 TextButton(
@@ -169,31 +171,33 @@ class _CustomersScreenState extends State<CustomersScreen> {
       builder: (ctx) {
         return AlertDialog(
           title: Text('سداد دفعة نقدية - ${customer.name}'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'الرصيد المستحق الحالي: ${NumberFormat('#,##0').format(customer.currentBalance)} ج.س',
-                style: const TextStyle(fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 14),
-              TextFormField(
-                controller: _paymentAmountController,
-                keyboardType: TextInputType.number,
-                decoration: const InputDecoration(
-                  labelText: 'المبلغ المدفوع (ج.س)',
-                  suffixText: 'ج.س',
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'الرصيد المستحق الحالي: ${NumberFormat('#,##0').format(customer.currentBalance)} ج.س',
+                  style: const TextStyle(fontWeight: FontWeight.bold),
                 ),
-              ),
-              const SizedBox(height: 12),
-              TextFormField(
-                controller: _paymentNotesController,
-                decoration: const InputDecoration(
-                  labelText: 'ملاحظات / رقم الإشعار (اختياري)',
+                const SizedBox(height: 14),
+                TextFormField(
+                  controller: _paymentAmountController,
+                  keyboardType: TextInputType.number,
+                  decoration: const InputDecoration(
+                    labelText: 'المبلغ المدفوع (ج.س)',
+                    suffixText: 'ج.س',
+                  ),
                 ),
-              ),
-            ],
+                const SizedBox(height: 12),
+                TextFormField(
+                  controller: _paymentNotesController,
+                  decoration: const InputDecoration(
+                    labelText: 'ملاحظات / رقم الإشعار (اختياري)',
+                  ),
+                ),
+              ],
+            ),
           ),
           actions: [
             TextButton(
@@ -236,30 +240,54 @@ class _CustomersScreenState extends State<CustomersScreen> {
           builder: (context, state) {
             if (state is CustomerStatementLoaded) {
               final cust = state.customer;
+              final isDark = Theme.of(context).brightness == Brightness.dark;
+
               return AlertDialog(
                 title: Text('كشف حساب: ${cust.name} (${cust.type})'),
-                content: SizedBox(
-                  width: 650,
-                  height: 450,
+                content: Container(
+                  width: double.maxFinite,
+                  constraints: const BoxConstraints(maxWidth: 650, maxHeight: 450),
                   child: Column(
                     children: [
                       // Header Stats
                       Container(
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          color: Colors.blue.shade50,
+                          color: isDark
+                              ? AppTheme.primaryBlue.withValues(alpha: 0.15)
+                              : Colors.blue.shade50,
                           borderRadius: BorderRadius.circular(8),
                         ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text('إجمالي المسحوبات (آجل): ${currencyFormat.format(state.totalCharges)} ج.س'),
-                            Text('إجمالي السدادات: ${currencyFormat.format(state.totalPayments)} ج.س'),
-                            Text(
-                              'الرصيد المتبقي: ${currencyFormat.format(cust.currentBalance)} ج.س',
-                              style: const TextStyle(fontWeight: FontWeight.bold, color: AppTheme.dangerRed),
-                            ),
-                          ],
+                        child: LayoutBuilder(
+                          builder: (context, constraints) {
+                            final isNarrow = constraints.maxWidth < 500;
+                            if (isNarrow) {
+                              return Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text('إجمالي المسحوبات (آجل): ${currencyFormat.format(state.totalCharges)} ج.س'),
+                                  const SizedBox(height: 4),
+                                  Text('إجمالي السدادات: ${currencyFormat.format(state.totalPayments)} ج.س'),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    'الرصيد المتبقي: ${currencyFormat.format(cust.currentBalance)} ج.س',
+                                    style: const TextStyle(fontWeight: FontWeight.bold, color: AppTheme.dangerRed),
+                                  ),
+                                ],
+                              );
+                            }
+                            return Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text('إجمالي المسحوبات (آجل): ${currencyFormat.format(state.totalCharges)} ج.س'),
+                                Text('إجمالي السدادات: ${currencyFormat.format(state.totalPayments)} ج.س'),
+                                Text(
+                                  'الرصيد المتبقي: ${currencyFormat.format(cust.currentBalance)} ج.س',
+                                  style: const TextStyle(fontWeight: FontWeight.bold, color: AppTheme.dangerRed),
+                                ),
+                              ],
+                            );
+                          },
                         ),
                       ),
                       const SizedBox(height: 14),
@@ -322,21 +350,29 @@ class _CustomersScreenState extends State<CustomersScreen> {
   @override
   Widget build(BuildContext context) {
     final currencyFormat = NumberFormat('#,##0', 'en_US');
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isMobile = screenWidth < 600;
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text(
-          'العملاء وحسابات الآجل (زبائن دائمين ومؤسسات حكومية)',
-          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+        title: Text(
+          isMobile ? 'حسابات العملاء والآجل' : 'العملاء وحسابات الآجل (زبائن دائمين ومؤسسات حكومية)',
+          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
         ),
         actions: [
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-            child: ElevatedButton.icon(
-              onPressed: () => _showAddCustomerDialog(context),
-              icon: const Icon(Icons.person_add_alt_1_rounded, color: Colors.white),
-              label: const Text('إضافة عميل جديد'),
-            ),
+            padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
+            child: isMobile
+                ? IconButton(
+                    icon: const Icon(Icons.person_add_alt_1_rounded),
+                    tooltip: 'إضافة عميل جديد',
+                    onPressed: () => _showAddCustomerDialog(context),
+                  )
+                : ElevatedButton.icon(
+                    onPressed: () => _showAddCustomerDialog(context),
+                    icon: const Icon(Icons.person_add_alt_1_rounded, color: Colors.white),
+                    label: const Text('إضافة عميل جديد'),
+                  ),
           ),
         ],
       ),
@@ -383,7 +419,7 @@ class _CustomersScreenState extends State<CustomersScreen> {
             }
 
             return SingleChildScrollView(
-              padding: const EdgeInsets.all(24.0),
+              padding: EdgeInsets.all(isMobile ? 16.0 : 24.0),
               child: Card(
                 child: Padding(
                   padding: const EdgeInsets.all(16.0),

@@ -117,7 +117,9 @@ class FuelStationApp extends StatelessWidget {
             return MaterialApp(
               title: stationName,
               debugShowCheckedModeBanner: false,
-              theme: AppTheme.lightTheme,
+              theme: AppTheme.darkTheme,
+              darkTheme: AppTheme.darkTheme,
+              themeMode: ThemeMode.dark,
               builder: (context, child) {
                 // Apply RTL Arabic directionality application-wide
                 return Directionality(

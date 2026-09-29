@@ -40,49 +40,51 @@ class _TankSettingsScreenState extends State<TankSettingsScreen> {
             Text('تعديل سعة ${tank.name}'),
           ],
         ),
-        content: Form(
-          key: formKey,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'نوع الوقود: ${tank.fuelType}',
-                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-              ),
-              const SizedBox(height: 6),
-              Text(
-                'المخزون الحالي المقاس: ${NumberFormat('#,##0').format(tank.currentDipLiters)} لتر',
-                style: TextStyle(color: Colors.grey.shade700, fontSize: 13),
-              ),
-              const SizedBox(height: 12),
-              const Text(
-                'حدد السعة الإجمالية القصوى للخزان باللتر. ستُستخدم لمنع الشحنات الزائدة وحساب نسبة الامتلاء الدقيقة.',
-                style: TextStyle(fontSize: 12, color: Colors.grey),
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: controller,
-                keyboardType: TextInputType.number,
-                autofocus: true,
-                decoration: const InputDecoration(
-                  labelText: 'السعة القصوى للخزان (لتر)',
-                  hintText: 'مثال: 45000',
-                  suffixText: 'لتر',
-                  border: OutlineInputBorder(),
+        content: SingleChildScrollView(
+          child: Form(
+            key: formKey,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'نوع الوقود: ${tank.fuelType}',
+                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
                 ),
-                validator: (val) {
-                  if (val == null || val.trim().isEmpty) {
-                    return 'يرجى إدخال سعة الخزان';
-                  }
-                  final parsed = double.tryParse(val.trim());
-                  if (parsed == null || parsed <= 0) {
-                    return 'يرجى إدخال رقم موجب صحيح أو عشري أكبر من صفر';
-                  }
-                  return null;
-                },
-              ),
-            ],
+                const SizedBox(height: 6),
+                Text(
+                  'المخزون الحالي المقاس: ${NumberFormat('#,##0').format(tank.currentDipLiters)} لتر',
+                  style: TextStyle(color: Colors.grey.shade700, fontSize: 13),
+                ),
+                const SizedBox(height: 12),
+                const Text(
+                  'حدد السعة الإجمالية القصوى للخزان باللتر. ستُستخدم لمنع الشحنات الزائدة وحساب نسبة الامتلاء الدقيقة.',
+                  style: TextStyle(fontSize: 12, color: Colors.grey),
+                ),
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: controller,
+                  keyboardType: TextInputType.number,
+                  autofocus: true,
+                  decoration: const InputDecoration(
+                    labelText: 'السعة القصوى للخزان (لتر)',
+                    hintText: 'مثال: 45000',
+                    suffixText: 'لتر',
+                    border: OutlineInputBorder(),
+                  ),
+                  validator: (val) {
+                    if (val == null || val.trim().isEmpty) {
+                      return 'يرجى إدخال سعة الخزان';
+                    }
+                    final parsed = double.tryParse(val.trim());
+                    if (parsed == null || parsed <= 0) {
+                      return 'يرجى إدخال رقم موجب صحيح أو عشري أكبر من صفر';
+                    }
+                    return null;
+                  },
+                ),
+              ],
+            ),
           ),
         ),
         actions: [
@@ -141,6 +143,9 @@ class _TankSettingsScreenState extends State<TankSettingsScreen> {
     }
 
     final numberFormat = NumberFormat('#,##0', 'en_US');
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isMobile = screenWidth < 600;
 
     return Scaffold(
       appBar: AppBar(
@@ -175,7 +180,7 @@ class _TankSettingsScreenState extends State<TankSettingsScreen> {
 
           if (state is TankLoaded) {
             return SingleChildScrollView(
-              padding: const EdgeInsets.all(24.0),
+              padding: EdgeInsets.all(isMobile ? 16.0 : 24.0),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -186,10 +191,10 @@ class _TankSettingsScreenState extends State<TankSettingsScreen> {
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(color: AppTheme.primaryBlue.withValues(alpha: 0.2)),
                     ),
-                    child: const Row(
+                    child: Row(
                       children: [
-                        Icon(Icons.info_outline_rounded, color: AppTheme.primaryBlue, size: 28),
-                        SizedBox(width: 14),
+                        const Icon(Icons.info_outline_rounded, color: AppTheme.primaryBlue, size: 28),
+                        const SizedBox(width: 14),
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -199,13 +204,13 @@ class _TankSettingsScreenState extends State<TankSettingsScreen> {
                                 style: TextStyle(
                                   fontWeight: FontWeight.bold,
                                   fontSize: 15,
-                                  color: AppTheme.primaryNavy,
+                                  color: isDark ? AppTheme.textLight : AppTheme.primaryNavy,
                                 ),
                               ),
-                              SizedBox(height: 4),
+                              const SizedBox(height: 4),
                               Text(
                                 'قم بضبط السعة القصوى الفعلية لكل خزان باللتر. يتحقق النظام تلقائياً من منع أي شحنة توريد تتجاوز هذه السعة، ويحسب نسبة الامتلاء بدقة.',
-                                style: TextStyle(fontSize: 13, color: Colors.black87),
+                                style: TextStyle(fontSize: 13, color: isDark ? AppTheme.textMuted : Colors.black87),
                               ),
                             ],
                           ),
@@ -214,9 +219,13 @@ class _TankSettingsScreenState extends State<TankSettingsScreen> {
                     ),
                   ),
                   const SizedBox(height: 24),
-                  const Text(
+                  Text(
                     'قائمة الخزانات',
-                    style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: AppTheme.primaryNavy),
+                    style: TextStyle(
+                      fontSize: 17,
+                      fontWeight: FontWeight.bold,
+                      color: isDark ? AppTheme.textLight : AppTheme.primaryNavy,
+                    ),
                   ),
                   const SizedBox(height: 16),
                   ...state.tanks.map((tank) {
@@ -230,101 +239,177 @@ class _TankSettingsScreenState extends State<TankSettingsScreen> {
                       margin: const EdgeInsets.only(bottom: 16),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
-                        side: BorderSide(color: Colors.grey.shade200),
+                        side: BorderSide(color: isDark ? AppTheme.darkBorder : Colors.grey.shade200),
                       ),
                       child: Padding(
                         padding: const EdgeInsets.all(20.0),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Row(
-                                  children: [
-                                    Container(
-                                      padding: const EdgeInsets.all(10),
-                                      decoration: BoxDecoration(
-                                        color: fuelColor.withValues(alpha: 0.1),
-                                        borderRadius: BorderRadius.circular(10),
+                            LayoutBuilder(
+                              builder: (context, constraints) {
+                                final isCardNarrow = constraints.maxWidth < 450;
+                                if (isCardNarrow) {
+                                  return Column(
+                                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                                    children: [
+                                      Row(
+                                        children: [
+                                          Container(
+                                            padding: const EdgeInsets.all(10),
+                                            decoration: BoxDecoration(
+                                              color: fuelColor.withValues(alpha: 0.1),
+                                              borderRadius: BorderRadius.circular(10),
+                                            ),
+                                            child: Icon(Icons.storage_rounded, color: fuelColor, size: 28),
+                                          ),
+                                          const SizedBox(width: 14),
+                                          Expanded(
+                                            child: Column(
+                                              crossAxisAlignment: CrossAxisAlignment.start,
+                                              children: [
+                                                Text(
+                                                  tank.name,
+                                                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 17),
+                                                ),
+                                                const SizedBox(height: 2),
+                                                Text(
+                                                  'نوع الوقود: ${tank.fuelType}',
+                                                  style: TextStyle(
+                                                    color: isDark ? AppTheme.textMuted : Colors.grey.shade600,
+                                                    fontSize: 13,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        ],
                                       ),
-                                      child: Icon(Icons.storage_rounded, color: fuelColor, size: 28),
-                                    ),
-                                    const SizedBox(width: 14),
-                                    Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          tank.name,
-                                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 17),
+                                      const SizedBox(height: 12),
+                                      ElevatedButton.icon(
+                                        style: ElevatedButton.styleFrom(
+                                          backgroundColor: AppTheme.primaryBlue,
+                                          foregroundColor: Colors.white,
+                                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                                         ),
-                                        const SizedBox(height: 2),
-                                        Text(
-                                          'نوع الوقود: ${tank.fuelType}',
-                                          style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
+                                        onPressed: () => _showEditCapacityDialog(context, tank, currentUser),
+                                        icon: const Icon(Icons.tune_rounded, size: 18),
+                                        label: Text(hasCap ? 'تعديل السعة' : 'تحديد السعة'),
+                                      ),
+                                    ],
+                                  );
+                                }
+                                return Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Row(
+                                      children: [
+                                        Container(
+                                          padding: const EdgeInsets.all(10),
+                                          decoration: BoxDecoration(
+                                            color: fuelColor.withValues(alpha: 0.1),
+                                            borderRadius: BorderRadius.circular(10),
+                                          ),
+                                          child: Icon(Icons.storage_rounded, color: fuelColor, size: 28),
+                                        ),
+                                        const SizedBox(width: 14),
+                                        Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              tank.name,
+                                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 17),
+                                            ),
+                                            const SizedBox(height: 2),
+                                            Text(
+                                              'نوع الوقود: ${tank.fuelType}',
+                                              style: TextStyle(
+                                                color: isDark ? AppTheme.textMuted : Colors.grey.shade600,
+                                                fontSize: 13,
+                                              ),
+                                            ),
+                                          ],
                                         ),
                                       ],
                                     ),
+                                    ElevatedButton.icon(
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: AppTheme.primaryBlue,
+                                        foregroundColor: Colors.white,
+                                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                                      ),
+                                      onPressed: () => _showEditCapacityDialog(context, tank, currentUser),
+                                      icon: const Icon(Icons.tune_rounded, size: 18),
+                                      label: Text(hasCap ? 'تعديل السعة' : 'تحديد السعة'),
+                                    ),
                                   ],
-                                ),
-                                ElevatedButton.icon(
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: AppTheme.primaryBlue,
-                                    foregroundColor: Colors.white,
-                                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                                  ),
-                                  onPressed: () => _showEditCapacityDialog(context, tank, currentUser),
-                                  icon: const Icon(Icons.tune_rounded, size: 18),
-                                  label: Text(hasCap ? 'تعديل السعة' : 'تحديد السعة'),
-                                ),
-                              ],
+                                );
+                              },
                             ),
                             const Divider(height: 32),
-                            // Metrics Grid
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: _buildMetricTile(
-                                    'السعة الكلية القصوى',
-                                    hasCap ? '${numberFormat.format(tank.capacityLiters)} لتر' : 'لم تُحدَّد بعد',
-                                    hasCap ? AppTheme.primaryNavy : Colors.amber.shade900,
-                                    Icons.straighten_rounded,
-                                  ),
-                                ),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: _buildMetricTile(
-                                    'المخزون الحالي (المسطرة)',
-                                    '${numberFormat.format(tank.currentDipLiters)} لتر',
-                                    Colors.black87,
-                                    Icons.opacity_rounded,
-                                  ),
-                                ),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: _buildMetricTile(
-                                    'نسبة الامتلاء',
-                                    hasCap
-                                        ? '${pct.toStringAsFixed(1)}%'
-                                        : 'لم تُحدَّد السعة بعد',
-                                    isOverfilled
-                                        ? AppTheme.dangerRed
-                                        : (hasCap ? fuelColor : Colors.amber.shade900),
-                                    Icons.pie_chart_rounded,
-                                  ),
-                                ),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: _buildMetricTile(
-                                    'المتاح للتفريغ',
-                                    hasCap
-                                        ? '${numberFormat.format((tank.capacityLiters - tank.currentDipLiters).clamp(0, double.infinity))} لتر'
-                                        : 'لم تُحدَّد بعد',
-                                    hasCap ? AppTheme.successGreen : Colors.grey.shade600,
-                                    Icons.add_shopping_cart_rounded,
-                                  ),
-                                ),
-                              ],
+                            // Metrics Grid (Responsive Layout)
+                            LayoutBuilder(
+                              builder: (context, constraints) {
+                                final isTileNarrow = constraints.maxWidth < 600;
+                                final tileWidth = isTileNarrow
+                                    ? (constraints.maxWidth - 12) / 2
+                                    : (constraints.maxWidth - 36) / 4;
+
+                                return Wrap(
+                                  spacing: 12,
+                                  runSpacing: 12,
+                                  children: [
+                                    SizedBox(
+                                      width: tileWidth,
+                                      child: _buildMetricTile(
+                                        'السعة الكلية القصوى',
+                                        hasCap ? '${numberFormat.format(tank.capacityLiters)} لتر' : 'لم تُحدَّد بعد',
+                                        hasCap
+                                            ? (isDark ? AppTheme.textLight : AppTheme.primaryNavy)
+                                            : Colors.amber.shade900,
+                                        Icons.straighten_rounded,
+                                        isDark: isDark,
+                                      ),
+                                    ),
+                                    SizedBox(
+                                      width: tileWidth,
+                                      child: _buildMetricTile(
+                                        'المخزون الحالي (المسطرة)',
+                                        '${numberFormat.format(tank.currentDipLiters)} لتر',
+                                        isDark ? AppTheme.textLight : Colors.black87,
+                                        Icons.opacity_rounded,
+                                        isDark: isDark,
+                                      ),
+                                    ),
+                                    SizedBox(
+                                      width: tileWidth,
+                                      child: _buildMetricTile(
+                                        'نسبة الامتلاء',
+                                        hasCap
+                                            ? '${pct.toStringAsFixed(1)}%'
+                                            : 'لم تُحدَّد السعة بعد',
+                                        isOverfilled
+                                            ? AppTheme.dangerRed
+                                            : (hasCap ? fuelColor : Colors.amber.shade900),
+                                        Icons.pie_chart_rounded,
+                                        isDark: isDark,
+                                      ),
+                                    ),
+                                    SizedBox(
+                                      width: tileWidth,
+                                      child: _buildMetricTile(
+                                        'المتاح للتفريغ',
+                                        hasCap
+                                            ? '${numberFormat.format((tank.capacityLiters - tank.currentDipLiters).clamp(0, double.infinity))} لتر'
+                                            : 'لم تُحدَّد بعد',
+                                        hasCap ? AppTheme.successGreen : (isDark ? AppTheme.textMuted : Colors.grey.shade600),
+                                        Icons.add_shopping_cart_rounded,
+                                        isDark: isDark,
+                                      ),
+                                    ),
+                                  ],
+                                );
+                              },
                             ),
                             const SizedBox(height: 16),
                             // Level bar
@@ -334,7 +419,7 @@ class _TankSettingsScreenState extends State<TankSettingsScreen> {
                                 height: 12,
                                 child: LinearProgressIndicator(
                                   value: hasCap ? (pct / 100).clamp(0.0, 1.0) : 0.0,
-                                  backgroundColor: Colors.grey.shade200,
+                                  backgroundColor: isDark ? AppTheme.darkCardLighter : Colors.grey.shade200,
                                   valueColor: AlwaysStoppedAnimation<Color>(
                                     isOverfilled ? AppTheme.dangerRed : fuelColor,
                                   ),
@@ -357,13 +442,13 @@ class _TankSettingsScreenState extends State<TankSettingsScreen> {
     );
   }
 
-  Widget _buildMetricTile(String label, String value, Color color, IconData icon) {
+  Widget _buildMetricTile(String label, String value, Color color, IconData icon, {bool isDark = false}) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
-        color: Colors.grey.shade50,
+        color: isDark ? AppTheme.darkCardLighter : Colors.grey.shade50,
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.grey.shade200),
+        border: Border.all(color: isDark ? AppTheme.darkBorder : Colors.grey.shade200),
       ),
       child: Row(
         children: [
@@ -375,7 +460,7 @@ class _TankSettingsScreenState extends State<TankSettingsScreen> {
               children: [
                 Text(
                   label,
-                  style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
+                  style: TextStyle(fontSize: 11, color: isDark ? AppTheme.textMuted : Colors.grey.shade600),
                 ),
                 const SizedBox(height: 2),
                 Text(

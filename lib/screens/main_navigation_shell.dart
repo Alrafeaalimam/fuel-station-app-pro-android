@@ -39,6 +39,7 @@ class MainNavigationShell extends StatefulWidget {
 }
 
 class _MainNavigationShellState extends State<MainNavigationShell> {
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   int _selectedIndex = 0;
   bool _isSidebarCollapsed = false;
   final ScrollController _sidebarScrollController = ScrollController();
@@ -103,6 +104,42 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
     }
   }
 
+  int _getBottomNavIndex(int screenIndex) {
+    switch (screenIndex) {
+      case 0:
+        return 0; // الرئيسية
+      case 1:
+        return 1; // المبيعات / الوردية
+      case 11:
+        return 2; // الخزانات
+      case 8:
+      case 7:
+        return 3; // التقارير
+      default:
+        return 4; // المزيد
+    }
+  }
+
+  void _onBottomNavTapped(int navIndex) {
+    switch (navIndex) {
+      case 0:
+        _onSelectScreen(0);
+        break;
+      case 1:
+        _onSelectScreen(1);
+        break;
+      case 2:
+        _onSelectScreen(11);
+        break;
+      case 3:
+        _onSelectScreen(8);
+        break;
+      case 4:
+        _scaffoldKey.currentState?.openDrawer();
+        break;
+    }
+  }
+
   void _showEditStationNameDialog(BuildContext context) {
     final controller = TextEditingController(text: StationConfig.stationName);
     showDialog(
@@ -129,7 +166,6 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
               decoration: const InputDecoration(
                 labelText: 'اسم المحطة',
                 hintText: 'أدخل اسم المحطة الجديد',
-                border: OutlineInputBorder(),
               ),
               autofocus: true,
             ),
@@ -223,11 +259,45 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
     final isMobile = screenWidth < 768;
 
     return Scaffold(
+      key: _scaffoldKey,
       drawer: isMobile
           ? Drawer(
               backgroundColor: AppTheme.sidebarBg,
               child: SafeArea(
                 child: _buildSidebarContent(context, currentUser, isCollapsed: false, isDrawer: true),
+              ),
+            )
+          : null,
+      bottomNavigationBar: isMobile
+          ? Container(
+              decoration: const BoxDecoration(
+                border: Border(top: BorderSide(color: AppTheme.darkBorder, width: 1)),
+              ),
+              child: BottomNavigationBar(
+                currentIndex: _getBottomNavIndex(_selectedIndex),
+                onTap: _onBottomNavTapped,
+                items: const [
+                  BottomNavigationBarItem(
+                    icon: Icon(Icons.dashboard_rounded),
+                    label: 'الرئيسية',
+                  ),
+                  BottomNavigationBarItem(
+                    icon: Icon(Icons.lock_clock_rounded),
+                    label: 'المبيعات',
+                  ),
+                  BottomNavigationBarItem(
+                    icon: Icon(Icons.storage_rounded),
+                    label: 'الخزانات',
+                  ),
+                  BottomNavigationBarItem(
+                    icon: Icon(Icons.assessment_rounded),
+                    label: 'التقارير',
+                  ),
+                  BottomNavigationBarItem(
+                    icon: Icon(Icons.menu_rounded),
+                    label: 'المزيد',
+                  ),
+                ],
               ),
             )
           : null,
@@ -241,7 +311,7 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
               children: [
                 // Top App Header
                 _buildTopHeader(context, currentUser, isMobile: isMobile),
-                // Trial Warning Banner
+                // Trial Warning Banner (Sleek Pill)
                 _buildTrialBanner(context),
                 // Screen Content
                 Expanded(
@@ -263,12 +333,16 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
   }
 
   Widget _buildTopHeader(BuildContext context, UserModel? user, {required bool isMobile}) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Container(
-      height: 60,
+      height: 58,
       padding: EdgeInsets.symmetric(horizontal: isMobile ? 8 : 20),
       decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border(bottom: BorderSide(color: Colors.grey.shade200)),
+        color: isDark ? AppTheme.darkBg : Colors.white,
+        border: Border(
+          bottom: BorderSide(color: isDark ? AppTheme.darkBorder : Colors.grey.shade200),
+        ),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -277,51 +351,49 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
             child: Row(
               children: [
                 if (isMobile)
-                  Builder(
-                    builder: (bContext) => IconButton(
-                      icon: const Icon(Icons.menu_rounded, color: AppTheme.primaryNavy),
-                      tooltip: 'القائمة الرئيسية',
-                      onPressed: () => Scaffold.of(bContext).openDrawer(),
-                    ),
+                  IconButton(
+                    icon: Icon(Icons.menu_rounded, color: isDark ? AppTheme.textLight : AppTheme.primaryNavy),
+                    tooltip: 'القائمة الرئيسية',
+                    onPressed: () => _scaffoldKey.currentState?.openDrawer(),
                   ),
                 Flexible(
                   child: ValueListenableBuilder<String>(
                     valueListenable: StationConfig.stationNameNotifier,
                     builder: (context, stationName, _) {
                       return InkWell(
-                        borderRadius: BorderRadius.circular(6),
+                        borderRadius: BorderRadius.circular(8),
                         onTap: user?.isManager == true
                             ? () => _showEditStationNameDialog(context)
                             : null,
                         child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                           decoration: BoxDecoration(
-                            color: AppTheme.primaryBlue.withValues(alpha: 0.1),
-                            borderRadius: BorderRadius.circular(6),
+                            color: AppTheme.primaryBlue.withValues(alpha: isDark ? 0.18 : 0.1),
+                            borderRadius: BorderRadius.circular(8),
                             border: Border.all(
-                              color: AppTheme.primaryBlue.withValues(alpha: 0.2),
+                              color: AppTheme.primaryBlue.withValues(alpha: isDark ? 0.35 : 0.2),
                             ),
                           ),
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              const Icon(Icons.local_gas_station_rounded, size: 16, color: AppTheme.primaryBlue),
-                              const SizedBox(width: 4),
+                              const Icon(Icons.local_gas_station_rounded, size: 16, color: AppTheme.primaryCyan),
+                              const SizedBox(width: 5),
                               Flexible(
                                 child: Text(
                                   stationName,
                                   overflow: TextOverflow.ellipsis,
                                   maxLines: 1,
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontWeight: FontWeight.bold,
-                                    color: AppTheme.primaryBlue,
-                                    fontSize: 12,
+                                    color: isDark ? AppTheme.textLight : AppTheme.primaryBlue,
+                                    fontSize: 12.5,
                                   ),
                                 ),
                               ),
                               if (user?.isManager == true) ...[
                                 const SizedBox(width: 4),
-                                const Icon(Icons.edit_outlined, size: 13, color: AppTheme.primaryBlue),
+                                const Icon(Icons.edit_outlined, size: 13, color: AppTheme.primaryCyan),
                               ],
                             ],
                           ),
@@ -333,7 +405,7 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
               ],
             ),
           ),
-          const SizedBox(width: 4),
+          const SizedBox(width: 6),
           Row(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -341,8 +413,9 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
               Container(
                 padding: EdgeInsets.symmetric(horizontal: isMobile ? 6 : 10, vertical: 4),
                 decoration: BoxDecoration(
-                  color: Colors.grey.shade100,
+                  color: isDark ? AppTheme.darkCard : Colors.grey.shade100,
                   borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: isDark ? AppTheme.darkBorder : Colors.transparent),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
@@ -353,7 +426,7 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
                           ? AppTheme.primaryBlue
                           : AppTheme.dieselColor,
                       child: Text(
-                        user?.name.substring(0, 1) ?? 'م',
+                        user?.name.isNotEmpty == true ? user!.name.substring(0, 1) : 'م',
                         style: const TextStyle(
                           color: Colors.white,
                           fontSize: 11,
@@ -365,7 +438,11 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
                       const SizedBox(width: 6),
                       Text(
                         user?.name ?? 'المستخدم',
-                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 12,
+                          color: isDark ? AppTheme.textLight : AppTheme.textDark,
+                        ),
                       ),
                       const SizedBox(width: 4),
                       Container(
@@ -381,7 +458,7 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
                           style: TextStyle(
                             fontSize: 10,
                             fontWeight: FontWeight.bold,
-                            color: user?.isManager == true ? Colors.indigo : Colors.deepOrange,
+                            color: user?.isManager == true ? AppTheme.primaryCyan : Colors.deepOrange,
                           ),
                         ),
                       ),
@@ -391,8 +468,8 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
               ),
               IconButton(
                 padding: const EdgeInsets.all(6),
-                constraints: const BoxConstraints(),
-                icon: const Icon(Icons.vpn_key_rounded, size: 18, color: AppTheme.primaryNavy),
+                constraints: const BoxConstraints(minWidth: 44, minHeight: 44),
+                icon: Icon(Icons.vpn_key_rounded, size: 18, color: isDark ? AppTheme.textMuted : AppTheme.primaryNavy),
                 tooltip: 'تغيير كلمة المرور',
                 onPressed: () {
                   if (user != null) {
@@ -405,7 +482,7 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
               ),
               IconButton(
                 padding: const EdgeInsets.all(6),
-                constraints: const BoxConstraints(),
+                constraints: const BoxConstraints(minWidth: 44, minHeight: 44),
                 icon: const Icon(Icons.logout_rounded, size: 18, color: AppTheme.dangerRed),
                 tooltip: 'تسجيل الخروج',
                 onPressed: () {
@@ -427,11 +504,7 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
 
         final days = info.daysRemaining;
         final isUrgent = days <= 2;
-
-        final bgColor = isUrgent ? const Color(0xFFFEF3C7) : const Color(0xFFE0F2FE);
-        final borderColor = isUrgent ? const Color(0xFFF59E0B) : const Color(0xFF38BDF8);
-        final textColor = isUrgent ? const Color(0xFF92400E) : const Color(0xFF0369A1);
-        final icon = isUrgent ? Icons.warning_amber_rounded : Icons.hourglass_top_rounded;
+        final isDark = Theme.of(context).brightness == Brightness.dark;
 
         String dayText;
         if (days == 1) {
@@ -443,36 +516,58 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
         }
 
         return Container(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+          margin: const EdgeInsets.fromLTRB(12, 6, 12, 4),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
           decoration: BoxDecoration(
-            color: bgColor,
-            border: Border(
-              bottom: BorderSide(color: borderColor, width: 1.5),
+            color: isDark ? AppTheme.darkCard : const Color(0xFFE0F2FE),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: isUrgent
+                  ? AppTheme.dangerRed.withValues(alpha: 0.5)
+                  : AppTheme.primaryBlue.withValues(alpha: 0.4),
+              width: 1.2,
             ),
           ),
           child: Row(
             children: [
-              Icon(icon, size: 18, color: textColor),
-              const SizedBox(width: 8),
-              Text(
-                'الفترة التجريبية: $dayText',
-                style: TextStyle(
-                  color: textColor,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 13,
+              Container(
+                width: 8,
+                height: 8,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: isUrgent ? AppTheme.dangerRed : AppTheme.primaryCyan,
                 ),
               ),
-              const Spacer(),
-              ElevatedButton.icon(
-                onPressed: () => _openActivationScreen(context),
-                icon: const Icon(Icons.key_rounded, size: 14),
-                label: const Text('تفعيل الترخيص الآن', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: textColor,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
-                  visualDensity: VisualDensity.compact,
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'الفترة التجريبية: $dayText',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: isDark ? AppTheme.textLight : AppTheme.primaryNavy,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 12,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              SizedBox(
+                height: 36,
+                child: ElevatedButton.icon(
+                  onPressed: () => _openActivationScreen(context),
+                  icon: const Icon(Icons.key_rounded, size: 14),
+                  label: const Text(
+                    'تفعيل الترخيص',
+                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppTheme.primaryBlue,
+                    foregroundColor: Colors.white,
+                    minimumSize: const Size(110, 36),
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 0),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  ),
                 ),
               ),
             ],
@@ -516,55 +611,63 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
         children: [
           // Station Brand Header
           Container(
-            padding: EdgeInsets.symmetric(horizontal: isCollapsed ? 8 : 16, vertical: 16),
-            child: Row(
-              mainAxisAlignment: isCollapsed ? MainAxisAlignment.center : MainAxisAlignment.spaceBetween,
-              children: [
-                const Icon(Icons.local_gas_station_rounded, color: Colors.cyanAccent, size: 28),
-                if (!isCollapsed) ...[
-                  const SizedBox(width: 10),
-                  const Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'نظام المحطة',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 15,
-                          ),
-                        ),
-                        Text(
-                          'إدارة وتشغيل الوقود Pro',
-                          style: TextStyle(color: Colors.white54, fontSize: 11),
-                        ),
-                      ],
+            padding: EdgeInsets.symmetric(horizontal: isCollapsed ? 4 : 16, vertical: 12),
+            child: isCollapsed
+                ? Center(
+                    child: IconButton(
+                      icon: const Icon(Icons.local_gas_station_rounded, color: Colors.cyanAccent, size: 26),
+                      tooltip: 'توسيع القائمة',
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(minWidth: 44, minHeight: 44),
+                      onPressed: () {
+                        setState(() {
+                          _isSidebarCollapsed = false;
+                        });
+                      },
                     ),
-                  ),
-                ],
-                if (isDrawer)
-                  IconButton(
-                    icon: const Icon(Icons.close_rounded, color: Colors.white70, size: 22),
-                    tooltip: 'إغلاق القائمة',
-                    onPressed: () => Navigator.of(context).pop(),
                   )
-                else
-                  IconButton(
-                    icon: Icon(
-                      isCollapsed ? Icons.chevron_left_rounded : Icons.chevron_right_rounded,
-                      color: Colors.white70,
-                      size: 20,
-                    ),
-                    tooltip: isCollapsed ? 'توسيع القائمة' : 'تصغير القائمة',
-                    onPressed: () {
-                      setState(() {
-                        _isSidebarCollapsed = !_isSidebarCollapsed;
-                      });
-                    },
+                : Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Icon(Icons.local_gas_station_rounded, color: Colors.cyanAccent, size: 28),
+                      const SizedBox(width: 10),
+                      const Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'نظام المحطة',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 15,
+                              ),
+                            ),
+                            Text(
+                              'إدارة وتشغيل الوقود Pro',
+                              style: TextStyle(color: Colors.white54, fontSize: 11),
+                            ),
+                          ],
+                        ),
+                      ),
+                      if (isDrawer)
+                        IconButton(
+                          icon: const Icon(Icons.close_rounded, color: Colors.white70, size: 22),
+                          tooltip: 'إغلاق القائمة',
+                          onPressed: () => Navigator.of(context).pop(),
+                        )
+                      else
+                        IconButton(
+                          icon: const Icon(Icons.chevron_right_rounded, color: Colors.white70, size: 20),
+                          tooltip: 'تصغير القائمة',
+                          onPressed: () {
+                            setState(() {
+                              _isSidebarCollapsed = true;
+                            });
+                          },
+                        ),
+                    ],
                   ),
-              ],
-            ),
           ),
           const Divider(color: Colors.white12, height: 1),
           const SizedBox(height: 8),

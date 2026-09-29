@@ -25,21 +25,24 @@ class _ReportsScreenState extends State<ReportsScreen> {
   Widget build(BuildContext context) {
     final currencyFormat = NumberFormat('#,##0', 'en_US');
     final numberFormat = NumberFormat('#,##0.0', 'en_US');
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isMobile = screenWidth < 768;
 
     return Scaffold(
       appBar: AppBar(
         title: const Text(
           'التقارير المالية وحركة الوقود والربحية',
-          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
         ),
         actions: [
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0),
+            padding: const EdgeInsets.symmetric(horizontal: 12.0),
             child: IconButton(
               onPressed: () {
                 context.read<ReportsBloc>().add(const LoadFinancialSummaryReport());
               },
-              icon: const Icon(Icons.refresh),
+              icon: const Icon(Icons.refresh_rounded),
               tooltip: 'تحديث التقرير',
             ),
           ),
@@ -55,146 +58,176 @@ class _ReportsScreenState extends State<ReportsScreen> {
             final sum = state.summary;
 
             return SingleChildScrollView(
-              padding: const EdgeInsets.all(24.0),
+              padding: EdgeInsets.all(isMobile ? 14.0 : 24.0),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Main Overview
-                  const Row(
+                  // Main Overview Section
+                  Row(
                     children: [
-                      Icon(Icons.analytics_rounded, color: AppTheme.primaryNavy, size: 22),
-                      SizedBox(width: 8),
+                      const Icon(Icons.analytics_rounded, color: AppTheme.primaryCyan, size: 20),
+                      const SizedBox(width: 8),
                       Text(
                         'المؤشرات المالية الشاملة للمحطة',
                         style: TextStyle(
-                          fontSize: 18,
+                          fontSize: isMobile ? 15 : 18,
                           fontWeight: FontWeight.bold,
-                          color: AppTheme.primaryNavy,
+                          color: isDark ? AppTheme.textLight : AppTheme.primaryNavy,
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 16),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: StatCard(
-                          title: 'إجمالي المبيعات الكلية',
-                          value: '${currencyFormat.format(sum.totalSalesAmount)} ج.س',
-                          icon: Icons.monetization_on_rounded,
-                          color: AppTheme.primaryNavy,
-                          subtitle: 'جميع طرق الدفع',
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: StatCard(
-                          title: 'مبيعات نقدي (كاش)',
-                          value: '${currencyFormat.format(sum.totalSalesCash)} ج.س',
-                          icon: Icons.money_rounded,
-                          color: AppTheme.successGreen,
-                          subtitle: 'توريد مباشر للخزنة',
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: StatCard(
-                          title: 'تحويل بنكي (بنكك)',
-                          value: '${currencyFormat.format(sum.totalSalesBank)} ج.س',
-                          icon: Icons.account_balance_rounded,
-                          color: AppTheme.primaryBlue,
-                          subtitle: 'حساب البنك',
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: StatCard(
-                          title: 'مبيعات آجل (عملاء)',
-                          value: '${currencyFormat.format(sum.totalSalesCredit)} ج.س',
-                          icon: Icons.credit_card_rounded,
-                          color: AppTheme.warningOrange,
-                          subtitle: 'مستحقات على الذمم',
-                        ),
-                      ),
-                    ],
+                  const SizedBox(height: 12),
+
+                  // Responsive Financial Stats Grid
+                  LayoutBuilder(
+                    builder: (context, constraints) {
+                      final itemWidth = constraints.maxWidth < 600
+                          ? (constraints.maxWidth - 10) / 2
+                          : (constraints.maxWidth - 36) / 4;
+
+                      return Wrap(
+                        spacing: 10,
+                        runSpacing: 10,
+                        children: [
+                          SizedBox(
+                            width: itemWidth,
+                            child: StatCard(
+                              title: 'إجمالي المبيعات الكلية',
+                              value: '${currencyFormat.format(sum.totalSalesAmount)} ج.س',
+                              icon: Icons.monetization_on_rounded,
+                              color: AppTheme.primaryNavy,
+                              subtitle: 'جميع طرق الدفع',
+                            ),
+                          ),
+                          SizedBox(
+                            width: itemWidth,
+                            child: StatCard(
+                              title: 'مبيعات نقدي (كاش)',
+                              value: '${currencyFormat.format(sum.totalSalesCash)} ج.س',
+                              icon: Icons.money_rounded,
+                              color: AppTheme.successGreen,
+                              subtitle: 'توريد مباشر للخزنة',
+                            ),
+                          ),
+                          SizedBox(
+                            width: itemWidth,
+                            child: StatCard(
+                              title: 'تحويل بنكي (بنكك)',
+                              value: '${currencyFormat.format(sum.totalSalesBank)} ج.س',
+                              icon: Icons.account_balance_rounded,
+                              color: AppTheme.primaryBlue,
+                              subtitle: 'حساب البنك',
+                            ),
+                          ),
+                          SizedBox(
+                            width: itemWidth,
+                            child: StatCard(
+                              title: 'مبيعات آجل (عملاء)',
+                              value: '${currencyFormat.format(sum.totalSalesCredit)} ج.س',
+                              icon: Icons.credit_card_rounded,
+                              color: AppTheme.warningOrange,
+                              subtitle: 'مستحقات على الذمم',
+                            ),
+                          ),
+                        ],
+                      );
+                    },
                   ),
-                  const SizedBox(height: 28),
+                  const SizedBox(height: 24),
 
                   // Fuel Volumes & Operations
-                  const Row(
+                  Row(
                     children: [
-                      Icon(Icons.local_gas_station_rounded, color: AppTheme.primaryNavy, size: 22),
-                      SizedBox(width: 8),
+                      const Icon(Icons.local_gas_station_rounded, color: AppTheme.primaryCyan, size: 20),
+                      const SizedBox(width: 8),
                       Text(
                         'حجم المبيعات باللترات ومصروفات التشغيل',
                         style: TextStyle(
-                          fontSize: 18,
+                          fontSize: isMobile ? 15 : 18,
                           fontWeight: FontWeight.bold,
-                          color: AppTheme.primaryNavy,
+                          color: isDark ? AppTheme.textLight : AppTheme.primaryNavy,
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 16),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: StatCard(
-                          title: 'إجمالي مبيعات البنزين',
-                          value: '${numberFormat.format(sum.totalBenzinLiters)} لتر',
-                          icon: Icons.local_gas_station,
-                          color: AppTheme.benzinColor,
-                          subtitle: 'عبر 4 فوهات بنزين',
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: StatCard(
-                          title: 'إجمالي مبيعات الجازولين',
-                          value: '${numberFormat.format(sum.totalDieselLiters)} لتر',
-                          icon: Icons.local_gas_station,
-                          color: AppTheme.dieselColor,
-                          subtitle: 'عبر 4 فوهات جازولين',
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: StatCard(
-                          title: 'إجمالي المصروفات التشغيلية',
-                          value: '${currencyFormat.format(sum.totalExpenses)} ج.س',
-                          icon: Icons.receipt_long,
-                          color: AppTheme.dangerRed,
-                          subtitle: 'كهرباء، صيانة، رواتب',
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: StatCard(
-                          title: 'صافي التدفق النقدي (السيولة)',
-                          value: '${currencyFormat.format(sum.netCashFlow)} ج.س',
-                          icon: Icons.savings_rounded,
-                          color: AppTheme.accentCyan,
-                          subtitle: 'نقد + تحصيلات - مصاريف',
-                        ),
-                      ),
-                    ],
+                  const SizedBox(height: 12),
+
+                  // Responsive Fuel Volume Stats Grid
+                  LayoutBuilder(
+                    builder: (context, constraints) {
+                      final itemWidth = constraints.maxWidth < 600
+                          ? (constraints.maxWidth - 10) / 2
+                          : (constraints.maxWidth - 36) / 4;
+
+                      return Wrap(
+                        spacing: 10,
+                        runSpacing: 10,
+                        children: [
+                          SizedBox(
+                            width: itemWidth,
+                            child: StatCard(
+                              title: 'مبيعات البنزين',
+                              value: '${numberFormat.format(sum.totalBenzinLiters)} L',
+                              icon: Icons.local_gas_station,
+                              color: AppTheme.benzinColor,
+                              subtitle: 'عبر 4 فوهات بنزين',
+                            ),
+                          ),
+                          SizedBox(
+                            width: itemWidth,
+                            child: StatCard(
+                              title: 'مبيعات الجازولين',
+                              value: '${numberFormat.format(sum.totalDieselLiters)} L',
+                              icon: Icons.local_gas_station,
+                              color: AppTheme.dieselColor,
+                              subtitle: 'عبر 4 فوهات جازولين',
+                            ),
+                          ),
+                          SizedBox(
+                            width: itemWidth,
+                            child: StatCard(
+                              title: 'المصروفات التشغيلية',
+                              value: '${currencyFormat.format(sum.totalExpenses)} ج.س',
+                              icon: Icons.receipt_long,
+                              color: AppTheme.dangerRed,
+                              subtitle: 'كهرباء، صيانة، رواتب',
+                            ),
+                          ),
+                          SizedBox(
+                            width: itemWidth,
+                            child: StatCard(
+                              title: 'صافي التدفق النقدي',
+                              value: '${currencyFormat.format(sum.netCashFlow)} ج.س',
+                              icon: Icons.savings_rounded,
+                              color: AppTheme.accentCyan,
+                              subtitle: 'نقد + تحصيلات - مصاريف',
+                            ),
+                          ),
+                        ],
+                      );
+                    },
                   ),
-                  const SizedBox(height: 32),
+                  const SizedBox(height: 24),
 
                   // Consolidated Summary Card
                   Card(
                     child: Padding(
-                      padding: const EdgeInsets.all(24.0),
+                      padding: EdgeInsets.all(isMobile ? 16.0 : 24.0),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Row(
+                          Row(
                             children: [
-                              Icon(Icons.account_balance_wallet_rounded, color: AppTheme.primaryNavy, size: 20),
-                              SizedBox(width: 8),
+                              const Icon(Icons.account_balance_wallet_rounded, color: AppTheme.primaryCyan, size: 20),
+                              const SizedBox(width: 8),
                               Text(
                                 'بيان الحساب الختامي التراكمي',
-                                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                                style: TextStyle(
+                                  fontSize: isMobile ? 14 : 16,
+                                  fontWeight: FontWeight.bold,
+                                  color: isDark ? AppTheme.textLight : AppTheme.textDark,
+                                ),
                               ),
                             ],
                           ),
@@ -203,31 +236,37 @@ class _ReportsScreenState extends State<ReportsScreen> {
                             'إجمالي الإيرادات المحققة من الوقود',
                             '${currencyFormat.format(sum.totalSalesAmount)} ج.س',
                             isBold: true,
+                            isDark: isDark,
                           ),
                           _buildReportRow(
                             'المتحصلات النقدية المحصلة فعلياً بالخزنة',
                             '${currencyFormat.format(sum.totalSalesCash)} ج.س',
+                            isDark: isDark,
                           ),
                           _buildReportRow(
                             'التحويلات البنكية المباشرة (تطبيق بنكك)',
                             '${currencyFormat.format(sum.totalSalesBank)} ج.س',
+                            isDark: isDark,
                           ),
                           _buildReportRow(
                             'تحصيلات سداد ديون سابقة من عملاء الآجل',
                             '+${currencyFormat.format(sum.totalCreditCollected)} ج.س',
                             color: AppTheme.successGreen,
+                            isDark: isDark,
                           ),
                           _buildReportRow(
                             'إجمالي المصروفات المنصرفة من الخزنة',
                             '-${currencyFormat.format(sum.totalExpenses)} ج.س',
                             color: AppTheme.dangerRed,
+                            isDark: isDark,
                           ),
                           const Divider(height: 24),
                           _buildReportRow(
                             'صافي رصيد السيولة النقدية المستلمة',
                             '${currencyFormat.format(sum.netCashFlow)} ج.س',
                             isBold: true,
-                            color: AppTheme.primaryBlue,
+                            color: isDark ? AppTheme.primaryCyan : AppTheme.primaryBlue,
+                            isDark: isDark,
                           ),
                         ],
                       ),
@@ -262,7 +301,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
                         context.read<ReportsBloc>().add(const LoadFinancialSummaryReport());
                       },
                       icon: const Icon(Icons.refresh_rounded),
-                      label: const Text('إعادة تحميل التقرير'),
+                      label: const Text('إعادة المحاولة'),
                     ),
                   ],
                 ),
@@ -270,45 +309,42 @@ class _ReportsScreenState extends State<ReportsScreen> {
             );
           }
 
-          return Center(
-            child: ElevatedButton.icon(
-              onPressed: () {
-                context.read<ReportsBloc>().add(const LoadFinancialSummaryReport());
-              },
-              icon: const Icon(Icons.refresh_rounded),
-              label: const Text('تحميل البيانات المالية'),
-            ),
-          );
+          return const SizedBox.shrink();
         },
       ),
     );
   }
 
   Widget _buildReportRow(
-    String label,
+    String title,
     String value, {
     bool isBold = false,
     Color? color,
+    required bool isDark,
   }) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8.0),
+      padding: const EdgeInsets.symmetric(vertical: 6.0),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: isBold ? FontWeight.bold : FontWeight.normal,
-              color: Colors.black87,
+          Expanded(
+            child: Text(
+              title,
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: isBold ? FontWeight.bold : FontWeight.normal,
+                color: isDark ? (isBold ? AppTheme.textLight : AppTheme.textMuted) : Colors.black87,
+              ),
             ),
           ),
+          const SizedBox(width: 8),
           Text(
             value,
             style: TextStyle(
-              fontSize: 15,
-              fontWeight: isBold ? FontWeight.bold : FontWeight.w600,
-              color: color ?? Colors.black87,
+              fontSize: isBold ? 14.5 : 13,
+              fontWeight: isBold ? FontWeight.w900 : FontWeight.bold,
+              color: color ?? (isDark ? AppTheme.textLight : Colors.black87),
+              fontFamily: 'monospace',
             ),
           ),
         ],

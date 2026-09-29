@@ -50,46 +50,48 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
           builder: (context, setDialogState) {
             return AlertDialog(
               title: const Text('تسجيل مصروف جديد'),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Text(
-                    'سيتم خصم قيمة المصروف تلقائياً من رصيد الخزنة النقدية لليوم الحالي.',
-                    style: TextStyle(fontSize: 12, color: Colors.black54),
-                  ),
-                  const SizedBox(height: 14),
-                  DropdownButtonFormField<String>(
-                    initialValue: _selectedCategory,
-                    decoration: const InputDecoration(labelText: 'بند / تصنيف المصروف'),
-                    items: _categories.map((c) {
-                      return DropdownMenuItem(value: c, child: Text(c));
-                    }).toList(),
-                    onChanged: (v) {
-                      if (v != null) {
-                        setDialogState(() {
-                          _selectedCategory = v;
-                        });
-                      }
-                    },
-                  ),
-                  const SizedBox(height: 12),
-                  TextFormField(
-                    controller: _amountController,
-                    keyboardType: TextInputType.number,
-                    decoration: const InputDecoration(
-                      labelText: 'مبلغ المصروف (ج.س)',
-                      suffixText: 'ج.س',
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Text(
+                      'سيتم خصم قيمة المصروف تلقائياً من رصيد الخزنة النقدية لليوم الحالي.',
+                      style: TextStyle(fontSize: 12, color: Colors.black54),
                     ),
-                  ),
-                  const SizedBox(height: 12),
-                  TextFormField(
-                    controller: _descriptionController,
-                    decoration: const InputDecoration(
-                      labelText: 'تفاصيل وبيان المصروف',
-                      hintText: 'مثلاً: صيانة فوهة رقم 3 وشراء قطع غيار',
+                    const SizedBox(height: 14),
+                    DropdownButtonFormField<String>(
+                      initialValue: _selectedCategory,
+                      decoration: const InputDecoration(labelText: 'بند / تصنيف المصروف'),
+                      items: _categories.map((c) {
+                        return DropdownMenuItem(value: c, child: Text(c));
+                      }).toList(),
+                      onChanged: (v) {
+                        if (v != null) {
+                          setDialogState(() {
+                            _selectedCategory = v;
+                          });
+                        }
+                      },
                     ),
-                  ),
-                ],
+                    const SizedBox(height: 12),
+                    TextFormField(
+                      controller: _amountController,
+                      keyboardType: TextInputType.number,
+                      decoration: const InputDecoration(
+                        labelText: 'مبلغ المصروف (ج.س)',
+                        suffixText: 'ج.س',
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    TextFormField(
+                      controller: _descriptionController,
+                      decoration: const InputDecoration(
+                        labelText: 'تفاصيل وبيان المصروف',
+                        hintText: 'مثلاً: صيانة فوهة رقم 3 وشراء قطع غيار',
+                      ),
+                    ),
+                  ],
+                ),
               ),
               actions: [
                 TextButton(
@@ -132,22 +134,31 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
     final currencyFormat = NumberFormat('#,##0', 'en_US');
     final authState = context.watch<AuthBloc>().state;
     final userId = authState is AuthAuthenticated ? authState.user.id ?? 1 : 1;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isMobile = screenWidth < 600;
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text(
-          'إدارة المصروفات التشغيلية للمحطة',
-          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+        title: Text(
+          isMobile ? 'المصروفات التشغيلية' : 'إدارة المصروفات التشغيلية للمحطة',
+          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
         ),
         actions: [
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-            child: ElevatedButton.icon(
-              style: ElevatedButton.styleFrom(backgroundColor: AppTheme.dangerRed),
-              onPressed: () => _showAddExpenseDialog(context, userId),
-              icon: const Icon(Icons.add_card_rounded, color: Colors.white),
-              label: const Text('تسجيل مصروف جديد'),
-            ),
+            padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
+            child: isMobile
+                ? IconButton(
+                    icon: const Icon(Icons.add_card_rounded),
+                    tooltip: 'تسجيل مصروف جديد',
+                    onPressed: () => _showAddExpenseDialog(context, userId),
+                  )
+                : ElevatedButton.icon(
+                    style: ElevatedButton.styleFrom(backgroundColor: AppTheme.dangerRed),
+                    onPressed: () => _showAddExpenseDialog(context, userId),
+                    icon: const Icon(Icons.add_card_rounded, color: Colors.white),
+                    label: const Text('تسجيل مصروف جديد'),
+                  ),
           ),
         ],
       ),
@@ -176,68 +187,86 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
 
           if (state is ExpenseLoaded) {
             return SingleChildScrollView(
-              padding: const EdgeInsets.all(24.0),
+              padding: EdgeInsets.all(isMobile ? 16.0 : 24.0),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Total and Category Breakdown Cards
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Card(
-                          child: Padding(
-                            padding: const EdgeInsets.all(16.0),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'إجمالي المصروفات الكلية',
-                                  style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
-                                ),
-                                const SizedBox(height: 6),
-                                Text(
-                                  '${currencyFormat.format(state.totalExpenses)} ج.س',
-                                  style: const TextStyle(
-                                    fontSize: 22,
-                                    fontWeight: FontWeight.bold,
-                                    color: AppTheme.dangerRed,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      ..._categories.map((cat) {
-                        final catTotal = state.categorySummary[cat] ?? 0.0;
-                        return Expanded(
-                          child: Card(
-                            child: Padding(
-                              padding: const EdgeInsets.all(16.0),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    cat,
-                                    style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
-                                  ),
-                                  const SizedBox(height: 6),
-                                  Text(
-                                    '${currencyFormat.format(catTotal)} ج.س',
-                                    style: const TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.bold,
-                                      color: AppTheme.primaryNavy,
+                  // Total and Category Breakdown Cards (Responsive Layout)
+                  LayoutBuilder(
+                    builder: (context, constraints) {
+                      final isNarrow = constraints.maxWidth < 600;
+                      final itemWidth = isNarrow
+                          ? (constraints.maxWidth - 12) / 2
+                          : (constraints.maxWidth - 48) / 5;
+
+                      return Wrap(
+                        spacing: 12,
+                        runSpacing: 12,
+                        children: [
+                          SizedBox(
+                            width: isNarrow ? constraints.maxWidth : itemWidth,
+                            child: Card(
+                              child: Padding(
+                                padding: const EdgeInsets.all(16.0),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'إجمالي المصروفات الكلية',
+                                      style: TextStyle(
+                                        fontSize: 13,
+                                        color: isDark ? AppTheme.textMuted : Colors.grey.shade600,
+                                      ),
                                     ),
-                                  ),
-                                ],
+                                    const SizedBox(height: 6),
+                                    Text(
+                                      '${currencyFormat.format(state.totalExpenses)} ج.س',
+                                      style: const TextStyle(
+                                        fontSize: 22,
+                                        fontWeight: FontWeight.bold,
+                                        color: AppTheme.dangerRed,
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
                             ),
                           ),
-                        );
-                      }),
-                    ],
+                          ..._categories.map((cat) {
+                            final catTotal = state.categorySummary[cat] ?? 0.0;
+                            return SizedBox(
+                              width: itemWidth,
+                              child: Card(
+                                child: Padding(
+                                  padding: const EdgeInsets.all(16.0),
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        cat,
+                                        style: TextStyle(
+                                          fontSize: 13,
+                                          color: isDark ? AppTheme.textMuted : Colors.grey.shade600,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 6),
+                                      Text(
+                                        '${currencyFormat.format(catTotal)} ج.س',
+                                        style: TextStyle(
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.bold,
+                                          color: isDark ? AppTheme.textLight : AppTheme.primaryNavy,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            );
+                          }),
+                        ],
+                      );
+                    },
                   ),
                   const SizedBox(height: 28),
 

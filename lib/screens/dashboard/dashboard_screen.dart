@@ -18,6 +18,7 @@ import '../../bloc/customers/customer_event.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/stat_card.dart';
 import '../../widgets/tank_level_card.dart';
+import '../../widgets/quick_action_card.dart';
 import '../../config/station_config.dart';
 import '../../utils/permission_guard.dart';
 
@@ -49,404 +50,519 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final numberFormat = NumberFormat('#,##0', 'en_US');
     final authState = context.watch<AuthBloc>().state;
     final currentUser = authState is AuthAuthenticated ? authState.user : null;
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isMobile = screenWidth < 768;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Top Welcome & Quick Actions Bar
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                    Text(
-                      'مرحباً بك، ${currentUser?.name ?? "المستخدم"}',
-                      style: const TextStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.bold,
-                        color: AppTheme.primaryNavy,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    ValueListenableBuilder<String>(
-                      valueListenable: StationConfig.stationNameNotifier,
-                      builder: (context, stationName, _) => Text(
-                        'لوحة المتابعة الميدانية والمالية - $stationName',
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: Colors.grey.shade600,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-                Row(
-                  children: [
-                    IconButton.filledTonal(
-                      onPressed: _refreshAll,
-                      icon: const Icon(Icons.refresh_rounded),
-                      tooltip: 'تحديث البيانات',
-                    ),
-                    const SizedBox(width: 8),
-                    ElevatedButton.icon(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppTheme.successGreen,
-                      ),
-                      onPressed: () => widget.onNavigate(1), // Go to Shift close
-                      icon: const Icon(Icons.lock_clock_rounded, color: Colors.white),
-                      label: const Text('قفل وردية جديدة'),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-            const SizedBox(height: 24),
+      body: RefreshIndicator(
+        onRefresh: () async => _refreshAll(),
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: EdgeInsets.symmetric(
+            horizontal: isMobile ? 14.0 : 24.0,
+            vertical: isMobile ? 12.0 : 20.0,
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // 1. Station Greeting & Quick Shift Trigger
+              _buildGreetingHeader(currentUser, isMobile, isDark),
+              SizedBox(height: isMobile ? 14 : 20),
 
-            // Live Prices Banner
-            BlocBuilder<FuelPriceBloc, FuelPriceState>(
-              builder: (context, priceState) {
-                if (priceState is FuelPriceLoaded) {
-                  final benzinPrice = priceState.activePrices['بنزين']?.pricePerLiter ?? 0;
-                  final dieselPrice = priceState.activePrices['جازولين']?.pricePerLiter ?? 0;
+              // 2. Fuel Price Cards (Live Prices)
+              _buildFuelPriceCards(numberFormat, isMobile, isDark),
+              SizedBox(height: isMobile ? 16 : 22),
 
-                  return Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: AppTheme.primaryNavy,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Row(
-                      children: [
-                        const Icon(Icons.price_change_outlined, color: Colors.amber, size: 30),
-                        const SizedBox(width: 14),
-                        const Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'التسعيرة الرسمية السارية حالياً',
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 15,
-                                ),
-                              ),
-                              Text(
-                                'تُعتمد تلقائياً في حسابات قفل الوردية الحالية',
-                                style: TextStyle(color: Colors.white70, fontSize: 12),
-                              ),
-                            ],
-                          ),
-                        ),
-                        _buildPriceTag('بنزين', benzinPrice, AppTheme.benzinColor),
-                        const SizedBox(width: 12),
-                        _buildPriceTag('جازولين', dieselPrice, AppTheme.dieselColor),
-                      ],
-                    ),
-                  );
-                }
-                return const SizedBox.shrink();
-              },
-            ),
-            const SizedBox(height: 24),
+              // 3. Quick Operations 2x2 Grid (Thumb-Friendly Actions)
+              _buildQuickOperationsGrid(isMobile),
+              SizedBox(height: isMobile ? 20 : 26),
 
-            // Financial & Cash Box Stats
-            BlocBuilder<CashBoxBloc, CashBoxState>(
-              builder: (context, cashState) {
-                final todayBox = cashState is CashBoxLoaded ? cashState.todayBox : null;
-                final opening = todayBox?.openingBalance ?? 0.0;
-                final cashIn = todayBox?.cashIn ?? 0.0;
-                final cashOut = todayBox?.cashOut ?? 0.0;
-                final closing = todayBox?.closingBalance ?? 0.0;
+              // 4. Tanks Monitoring Section
+              _buildTanksSection(currentUser, isMobile, isDark),
+              SizedBox(height: isMobile ? 20 : 26),
 
-                return BlocBuilder<CustomerBloc, CustomerState>(
-                  builder: (context, custState) {
-                    double totalDebts = 0.0;
-                    if (custState is CustomerLoaded) {
-                      for (final c in custState.customers) {
-                        totalDebts += c.currentBalance;
-                      }
-                    }
-
-                    return LayoutBuilder(
-                      builder: (context, constraints) {
-                        final isNarrow = constraints.maxWidth < 900;
-                        final cardWidth = isNarrow
-                            ? (constraints.maxWidth - 12) / 2
-                            : (constraints.maxWidth - 36) / 4;
-
-                        return Wrap(
-                          spacing: 12,
-                          runSpacing: 12,
-                          children: [
-                            SizedBox(
-                              width: cardWidth,
-                              child: StatCard(
-                                title: 'رصيد الخزنة الحالي',
-                                value: '${numberFormat.format(closing)} ج.س',
-                                icon: Icons.account_balance_wallet_rounded,
-                                color: AppTheme.primaryBlue,
-                                subtitle: 'افتتاحي: ${numberFormat.format(opening)}',
-                              ),
-                            ),
-                            SizedBox(
-                              width: cardWidth,
-                              child: StatCard(
-                                title: 'إجمالي الوارد اليوم',
-                                value: '${numberFormat.format(cashIn)} ج.س',
-                                icon: Icons.arrow_downward_rounded,
-                                color: AppTheme.successGreen,
-                                subtitle: 'نقدي + تحصيلات آجل',
-                              ),
-                            ),
-                            SizedBox(
-                              width: cardWidth,
-                              child: StatCard(
-                                title: 'إجمالي المنصرف اليوم',
-                                value: '${numberFormat.format(cashOut)} ج.س',
-                                icon: Icons.arrow_upward_rounded,
-                                color: AppTheme.dangerRed,
-                                subtitle: 'مصروفات تشغيلية',
-                              ),
-                            ),
-                            SizedBox(
-                              width: cardWidth,
-                              child: StatCard(
-                                title: 'إجمالي مديونيات الآجل',
-                                value: '${numberFormat.format(totalDebts)} ج.س',
-                                icon: Icons.people_outline_rounded,
-                                color: AppTheme.warningOrange,
-                                subtitle: 'مستحقات على العملاء',
-                              ),
-                            ),
-                          ],
-                        );
-                      },
-                    );
-                  },
-                );
-              },
-            ),
-            const SizedBox(height: 28),
-
-            // Tanks Level Section
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Flexible(
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.storage_rounded, color: AppTheme.primaryNavy, size: 22),
-                      SizedBox(width: 8),
-                      Flexible(
-                        child: Text(
-                          'حالة خزانات الوقود ومناسيب المسطرة (2 خزان)',
-                          style: TextStyle(
-                            fontSize: 17,
-                            fontWeight: FontWeight.bold,
-                            color: AppTheme.primaryNavy,
-                          ),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                if (currentUser?.can(AppPermission.manageTanks) ?? false)
-                  TextButton.icon(
-                    onPressed: () => widget.onNavigate(11),
-                    icon: const Icon(Icons.settings_suggest_rounded, size: 18),
-                    label: const Text('إعدادات وسعات الخزانات'),
-                  ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            BlocBuilder<TankBloc, TankState>(
-              builder: (context, tankState) {
-                if (tankState is TankLoading) {
-                  return const Center(child: CircularProgressIndicator());
-                }
-                if (tankState is TankLoaded) {
-                  return LayoutBuilder(
-                    builder: (context, constraints) {
-                      final isNarrow = constraints.maxWidth < 800;
-                      return isNarrow
-                          ? Column(
-                              children: tankState.tanks
-                                  .map((tank) => Padding(
-                                        padding: const EdgeInsets.only(bottom: 12),
-                                        child: TankLevelCard(tank: tank),
-                                      ))
-                                  .toList(),
-                            )
-                          : Row(
-                              children: tankState.tanks
-                                  .map((tank) => Expanded(
-                                        child: Padding(
-                                          padding: const EdgeInsets.symmetric(horizontal: 6),
-                                          child: TankLevelCard(tank: tank),
-                                        ),
-                                      ))
-                                  .toList(),
-                            );
-                    },
-                  );
-                }
-                return const SizedBox.shrink();
-              },
-            ),
-            const SizedBox(height: 28),
-
-            // 8 Pumps / Nozzles Grid
-            const Row(
-              children: [
-                Icon(Icons.speed_rounded, color: AppTheme.primaryNavy, size: 22),
-                SizedBox(width: 8),
-                Text(
-                  'فوهات التوزيع العاملة (8 فوهات)',
-                  style: TextStyle(
-                    fontSize: 17,
-                    fontWeight: FontWeight.bold,
-                    color: AppTheme.primaryNavy,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            BlocBuilder<TankBloc, TankState>(
-              builder: (context, tankState) {
-                if (tankState is TankLoaded) {
-                  return LayoutBuilder(
-                    builder: (context, constraints) {
-                      final crossAxisCount = constraints.maxWidth < 600
-                          ? 2
-                          : constraints.maxWidth < 1000
-                              ? 4
-                              : 4;
-
-                      return GridView.builder(
-                        shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
-                        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: crossAxisCount,
-                          crossAxisSpacing: 12,
-                          mainAxisSpacing: 12,
-                          childAspectRatio: 2.2,
-                        ),
-                        itemCount: tankState.pumps.length,
-                        itemBuilder: (context, index) {
-                          final pump = tankState.pumps[index];
-                          final tank = tankState.tanks.firstWhere(
-                            (t) => t.id == pump.tankId,
-                            orElse: () => tankState.tanks.first,
-                          );
-                          final isBenzin = tank.fuelType == 'بنزين';
-                          final fuelColor =
-                              isBenzin ? AppTheme.benzinColor : AppTheme.dieselColor;
-
-                          return Card(
-                            child: Padding(
-                              padding: const EdgeInsets.all(12.0),
-                              child: Row(
-                                children: [
-                                  CircleAvatar(
-                                    backgroundColor: fuelColor.withValues(alpha: 0.12),
-                                    child: Text(
-                                      '#${pump.nozzleNumber}',
-                                      style: TextStyle(
-                                        color: fuelColor,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                  ),
-                                  const SizedBox(width: 10),
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      mainAxisAlignment: MainAxisAlignment.center,
-                                      children: [
-                                        Text(
-                                          pump.name,
-                                          style: const TextStyle(
-                                            fontWeight: FontWeight.bold,
-                                            fontSize: 13,
-                                          ),
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
-                                        ),
-                                        Row(
-                                          children: [
-                                            Icon(Icons.water_drop_rounded, size: 12, color: fuelColor),
-                                            const SizedBox(width: 3),
-                                            Text(
-                                              tank.fuelType,
-                                              style: TextStyle(
-                                                color: fuelColor,
-                                                fontSize: 11,
-                                                fontWeight: FontWeight.w600,
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          );
-                        },
-                      );
-                    },
-                  );
-                }
-                return const SizedBox.shrink();
-              },
-            ),
-          ],
+              // 5. Cash Box & Financial Overview
+              _buildCashBoxOverview(numberFormat, isMobile, isDark),
+              const SizedBox(height: 24),
+            ],
+          ),
         ),
       ),
     );
   }
 
-  Widget _buildPriceTag(String fuelName, double price, Color color) {
-    final numberFormat = NumberFormat('#,##0', 'en_US');
+  Widget _buildGreetingHeader(dynamic currentUser, bool isMobile, bool isDark) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+      padding: EdgeInsets.symmetric(
+        horizontal: isMobile ? 14 : 18,
+        vertical: isMobile ? 12 : 16,
+      ),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: color.withValues(alpha: 0.5)),
+        color: isDark ? AppTheme.darkCard : Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: isDark ? AppTheme.darkBorder : Colors.grey.shade200,
+        ),
       ),
       child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Container(
-            width: 10,
-            height: 10,
-            decoration: BoxDecoration(shape: BoxShape.circle, color: color),
-          ),
-          const SizedBox(width: 8),
-          Text(
-            '$fuelName: ',
-            style: const TextStyle(color: Colors.white, fontSize: 13),
-          ),
-          Text(
-            '${numberFormat.format(price)} ج.س / لتر',
-            style: TextStyle(
-              color: color,
-              fontWeight: FontWeight.bold,
-              fontSize: 14,
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Row(
+                  children: [
+                    Flexible(
+                      child: Text(
+                        'مرحباً بك، ${currentUser?.name ?? "المستخدم"}',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: isMobile ? 17 : 21,
+                          fontWeight: FontWeight.bold,
+                          color: isDark ? AppTheme.textLight : AppTheme.primaryNavy,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: AppTheme.successGreen.withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: AppTheme.successGreen.withValues(alpha: 0.3)),
+                      ),
+                      child: const Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.circle, size: 6, color: AppTheme.successGreen),
+                          SizedBox(width: 4),
+                          Text(
+                            'نشط',
+                            style: TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                              color: AppTheme.successGreen,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 3),
+                ValueListenableBuilder<String>(
+                  valueListenable: StationConfig.stationNameNotifier,
+                  builder: (context, stationName, _) => Text(
+                    stationName,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: isDark ? AppTheme.textMuted : Colors.grey.shade600,
+                    ),
+                  ),
+                ),
+              ],
             ),
+          ),
+          const SizedBox(width: 10),
+          IconButton.filledTonal(
+            style: IconButton.styleFrom(
+              backgroundColor: isDark ? AppTheme.darkCardLighter : Colors.blue.shade50,
+              foregroundColor: AppTheme.primaryCyan,
+              minimumSize: const Size(44, 44),
+            ),
+            onPressed: _refreshAll,
+            icon: const Icon(Icons.refresh_rounded, size: 20),
+            tooltip: 'تحديث البيانات',
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildFuelPriceCards(NumberFormat numberFormat, bool isMobile, bool isDark) {
+    return BlocBuilder<FuelPriceBloc, FuelPriceState>(
+      builder: (context, priceState) {
+        double benzinPrice = 0;
+        double dieselPrice = 0;
+
+        if (priceState is FuelPriceLoaded) {
+          benzinPrice = priceState.activePrices['بنزين']?.pricePerLiter ?? 0;
+          dieselPrice = priceState.activePrices['جازولين']?.pricePerLiter ?? 0;
+        }
+
+        return LayoutBuilder(
+          builder: (context, constraints) {
+            final cardWidth = (constraints.maxWidth - 10) / 2;
+
+            return Row(
+              children: [
+                // Benzine Card
+                SizedBox(
+                  width: cardWidth,
+                  child: _buildSinglePriceCard(
+                    title: 'بنزين (سوبر)',
+                    price: benzinPrice,
+                    numberFormat: numberFormat,
+                    color: AppTheme.benzinColor,
+                    isDark: isDark,
+                  ),
+                ),
+                const SizedBox(width: 10),
+                // Diesel Card
+                SizedBox(
+                  width: cardWidth,
+                  child: _buildSinglePriceCard(
+                    title: 'جازولين (ديزل)',
+                    price: dieselPrice,
+                    numberFormat: numberFormat,
+                    color: AppTheme.dieselColor,
+                    isDark: isDark,
+                  ),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildSinglePriceCard({
+    required String title,
+    required double price,
+    required NumberFormat numberFormat,
+    required Color color,
+    required bool isDark,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14.0, vertical: 12.0),
+      decoration: BoxDecoration(
+        color: isDark ? AppTheme.darkCard : Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: color.withValues(alpha: isDark ? 0.35 : 0.25),
+          width: 1.2,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Flexible(
+                child: Text(
+                  title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                    color: color,
+                  ),
+                ),
+              ),
+              Icon(Icons.local_gas_station_rounded, size: 16, color: color),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.baseline,
+            textBaseline: TextBaseline.alphabetic,
+            children: [
+              Flexible(
+                child: Text(
+                  numberFormat.format(price),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w900,
+                    fontFamily: 'monospace',
+                    color: isDark ? AppTheme.textLight : AppTheme.textDark,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 4),
+              Text(
+                'ج.س/L',
+                style: TextStyle(
+                  fontSize: 10.5,
+                  fontWeight: FontWeight.w600,
+                  color: isDark ? AppTheme.textMuted : AppTheme.textDim,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildQuickOperationsGrid(bool isMobile) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            const Icon(Icons.bolt_rounded, size: 18, color: AppTheme.primaryCyan),
+            const SizedBox(width: 6),
+            Flexible(
+              child: Text(
+                'العمليات السريعة',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                  color: Theme.of(context).brightness == Brightness.dark
+                      ? AppTheme.textLight
+                      : AppTheme.primaryNavy,
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 10),
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final itemWidth = (constraints.maxWidth - 10) / 2;
+            return Wrap(
+              spacing: 10,
+              runSpacing: 10,
+              children: [
+                SizedBox(
+                  width: itemWidth,
+                  child: QuickActionCard(
+                    title: 'تسجيل مبيعات',
+                    subtitle: 'تفريغ وتوثيق فوري',
+                    icon: Icons.point_of_sale_rounded,
+                    color: AppTheme.primaryCyan,
+                    onTap: () => widget.onNavigate(1),
+                  ),
+                ),
+                SizedBox(
+                  width: itemWidth,
+                  child: QuickActionCard(
+                    title: 'قفل الوردية',
+                    subtitle: 'تسوية وجرد الخزينة',
+                    icon: Icons.lock_clock_rounded,
+                    color: AppTheme.successGreen,
+                    onTap: () => widget.onNavigate(1),
+                  ),
+                ),
+                SizedBox(
+                  width: itemWidth,
+                  child: QuickActionCard(
+                    title: 'استلام شحنة',
+                    subtitle: 'تفريغ صهريج وقود',
+                    icon: Icons.local_shipping_rounded,
+                    color: AppTheme.dieselColor,
+                    onTap: () => widget.onNavigate(3),
+                  ),
+                ),
+                SizedBox(
+                  width: itemWidth,
+                  child: QuickActionCard(
+                    title: 'جرد الخزانات',
+                    subtitle: 'معايرة المسطرة',
+                    icon: Icons.layers_rounded,
+                    color: Colors.purpleAccent,
+                    onTap: () => widget.onNavigate(11),
+                  ),
+                ),
+              ],
+            );
+          },
+        ),
+      ],
+    );
+  }
+
+  Widget _buildTanksSection(dynamic currentUser, bool isMobile, bool isDark) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Expanded(
+              child: Row(
+                children: [
+                  const Icon(Icons.storage_rounded, size: 18, color: AppTheme.primaryCyan),
+                  const SizedBox(width: 6),
+                  Flexible(
+                    child: Text(
+                      'مناسيب الخزانات الأرضية',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                        color: isDark ? AppTheme.textLight : AppTheme.primaryNavy,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            if (currentUser?.can(AppPermission.manageTanks) ?? false)
+              TextButton(
+                style: TextButton.styleFrom(
+                  minimumSize: const Size(48, 36),
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                ),
+                onPressed: () => widget.onNavigate(11),
+                child: const Text('إدارة السعات', style: TextStyle(fontSize: 12)),
+              ),
+          ],
+        ),
+        const SizedBox(height: 10),
+        BlocBuilder<TankBloc, TankState>(
+          builder: (context, tankState) {
+            if (tankState is TankLoading) {
+              return const Center(
+                child: Padding(
+                  padding: EdgeInsets.all(24.0),
+                  child: CircularProgressIndicator(),
+                ),
+              );
+            }
+            if (tankState is TankLoaded) {
+              if (tankState.tanks.isEmpty) {
+                return Container(
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: isDark ? AppTheme.darkCard : Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: const Center(
+                    child: Text('لم يتم تهيئة خزانات الوقود بعد.'),
+                  ),
+                );
+              }
+              return Column(
+                children: tankState.tanks
+                    .map((tank) => Padding(
+                          padding: const EdgeInsets.only(bottom: 10.0),
+                          child: TankLevelCard(tank: tank),
+                        ))
+                    .toList(),
+              );
+            }
+            return const SizedBox.shrink();
+          },
+        ),
+      ],
+    );
+  }
+
+  Widget _buildCashBoxOverview(NumberFormat numberFormat, bool isMobile, bool isDark) {
+    return BlocBuilder<CashBoxBloc, CashBoxState>(
+      builder: (context, cashState) {
+        final todayBox = cashState is CashBoxLoaded ? cashState.todayBox : null;
+        final opening = todayBox?.openingBalance ?? 0.0;
+        final cashIn = todayBox?.cashIn ?? 0.0;
+        final cashOut = todayBox?.cashOut ?? 0.0;
+        final closing = todayBox?.closingBalance ?? 0.0;
+
+        return BlocBuilder<CustomerBloc, CustomerState>(
+          builder: (context, custState) {
+            double totalDebts = 0.0;
+            if (custState is CustomerLoaded) {
+              for (final c in custState.customers) {
+                totalDebts += c.currentBalance;
+              }
+            }
+
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    const Icon(Icons.account_balance_wallet_rounded, size: 18, color: AppTheme.primaryCyan),
+                    const SizedBox(width: 6),
+                    Flexible(
+                      child: Text(
+                        'الخزينة والسيولة النقدية',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                          color: isDark ? AppTheme.textLight : AppTheme.primaryNavy,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                LayoutBuilder(
+                  builder: (context, constraints) {
+                    final itemWidth = constraints.maxWidth < 600
+                        ? (constraints.maxWidth - 10) / 2
+                        : (constraints.maxWidth - 30) / 4;
+
+                    return Wrap(
+                      spacing: 10,
+                      runSpacing: 10,
+                      children: [
+                        SizedBox(
+                          width: itemWidth,
+                          child: StatCard(
+                            title: 'رصيد الخزنة',
+                            value: '${numberFormat.format(closing)} ج.س',
+                            icon: Icons.account_balance_wallet_rounded,
+                            color: AppTheme.primaryBlue,
+                            subtitle: 'افتتاحي: ${numberFormat.format(opening)}',
+                          ),
+                        ),
+                        SizedBox(
+                          width: itemWidth,
+                          child: StatCard(
+                            title: 'إجمالي الوارد',
+                            value: '${numberFormat.format(cashIn)} ج.س',
+                            icon: Icons.arrow_downward_rounded,
+                            color: AppTheme.successGreen,
+                            subtitle: 'نقدي + تحصيلات',
+                          ),
+                        ),
+                        SizedBox(
+                          width: itemWidth,
+                          child: StatCard(
+                            title: 'إجمالي المنصرف',
+                            value: '${numberFormat.format(cashOut)} ج.س',
+                            icon: Icons.arrow_upward_rounded,
+                            color: AppTheme.dangerRed,
+                            subtitle: 'مصروفات تشغيلية',
+                          ),
+                        ),
+                        SizedBox(
+                          width: itemWidth,
+                          child: StatCard(
+                            title: 'مديونيات الآجل',
+                            value: '${numberFormat.format(totalDebts)} ج.س',
+                            icon: Icons.people_outline_rounded,
+                            color: AppTheme.warningOrange,
+                            subtitle: 'مستحقات العملاء',
+                          ),
+                        ),
+                      ],
+                    );
+                  },
+                ),
+              ],
+            );
+          },
+        );
+      },
     );
   }
 }

@@ -62,8 +62,9 @@ class _DeliveriesScreenState extends State<DeliveriesScreen> {
 
             return AlertDialog(
               title: const Text('تسجيل توريد وتفريغ شحنة جديدة'),
-              content: SizedBox(
-                width: 460,
+              content: Container(
+                width: double.maxFinite,
+                constraints: const BoxConstraints(maxWidth: 460),
                 child: SingleChildScrollView(
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
@@ -313,19 +314,21 @@ class _DeliveriesScreenState extends State<DeliveriesScreen> {
       builder: (ctx) {
         return AlertDialog(
           title: const Text('إضافة مورد وقود جديد'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextFormField(
-                controller: _supplierNameController,
-                decoration: const InputDecoration(labelText: 'اسم شركة التوريد أو المورد'),
-              ),
-              const SizedBox(height: 12),
-              TextFormField(
-                controller: _supplierPhoneController,
-                decoration: const InputDecoration(labelText: 'رقم الهاتف'),
-              ),
-            ],
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextFormField(
+                  controller: _supplierNameController,
+                  decoration: const InputDecoration(labelText: 'اسم شركة التوريد أو المورد'),
+                ),
+                const SizedBox(height: 12),
+                TextFormField(
+                  controller: _supplierPhoneController,
+                  decoration: const InputDecoration(labelText: 'رقم الهاتف'),
+                ),
+              ],
+            ),
           ),
           actions: [
             TextButton(
@@ -360,25 +363,34 @@ class _DeliveriesScreenState extends State<DeliveriesScreen> {
     final currencyFormat = NumberFormat('#,##0', 'en_US');
     final authState = context.watch<AuthBloc>().state;
     final userId = authState is AuthAuthenticated ? authState.user.id ?? 1 : 1;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isMobile = screenWidth < 600;
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text(
-          'سجل التوريد واستلام شحنات الوقود',
-          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+        title: Text(
+          isMobile ? 'استلام شحنات الوقود' : 'سجل التوريد واستلام شحنات الوقود',
+          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
         ),
         actions: [
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+            padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
             child: BlocBuilder<DeliveryBloc, DeliveryState>(
               builder: (context, state) {
                 if (state is DeliveryLoaded) {
-                  return ElevatedButton.icon(
-                    style: ElevatedButton.styleFrom(backgroundColor: AppTheme.primaryBlue),
-                    onPressed: () => _showRecordDeliveryDialog(context, state, userId),
-                    icon: const Icon(Icons.local_shipping_rounded, color: Colors.white),
-                    label: const Text('تسجيل شحنة واردة فوراً'),
-                  );
+                  return isMobile
+                      ? IconButton(
+                          icon: const Icon(Icons.local_shipping_rounded),
+                          tooltip: 'تسجيل شحنة واردة',
+                          onPressed: () => _showRecordDeliveryDialog(context, state, userId),
+                        )
+                      : ElevatedButton.icon(
+                          style: ElevatedButton.styleFrom(backgroundColor: AppTheme.primaryBlue),
+                          onPressed: () => _showRecordDeliveryDialog(context, state, userId),
+                          icon: const Icon(Icons.local_shipping_rounded, color: Colors.white),
+                          label: const Text('تسجيل شحنة واردة فوراً'),
+                        );
                 }
                 return const SizedBox.shrink();
               },
@@ -415,11 +427,11 @@ class _DeliveriesScreenState extends State<DeliveriesScreen> {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(Icons.local_shipping_outlined, size: 64, color: Colors.grey.shade400),
+                    Icon(Icons.local_shipping_outlined, size: 64, color: isDark ? AppTheme.textMuted : Colors.grey.shade400),
                     const SizedBox(height: 16),
-                    const Text(
+                    Text(
                       'لا توجد شحنات توريد مسجلة حتى الآن',
-                      style: TextStyle(fontSize: 16, color: Colors.black54),
+                      style: TextStyle(fontSize: 16, color: isDark ? AppTheme.textMuted : Colors.black54),
                     ),
                     const SizedBox(height: 16),
                     ElevatedButton.icon(
@@ -433,7 +445,7 @@ class _DeliveriesScreenState extends State<DeliveriesScreen> {
             }
 
             return SingleChildScrollView(
-              padding: const EdgeInsets.all(24.0),
+              padding: EdgeInsets.all(isMobile ? 16.0 : 24.0),
               child: Card(
                 child: Padding(
                   padding: const EdgeInsets.all(16.0),

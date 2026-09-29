@@ -419,106 +419,114 @@ class _ShiftCloseScreenState extends State<ShiftCloseScreen>
               ],
             ),
             const SizedBox(height: 12),
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(12.0),
-                child: SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: DataTable(
-                    columnSpacing: 24,
-                    columns: const [
-                      DataColumn(label: Text('الفوهة')),
-                      DataColumn(label: Text('النوع')),
-                      DataColumn(label: Text('العداد السابق')),
-                      DataColumn(label: Text('العداد الحالي (القفل)')),
-                      DataColumn(label: Text('اللترات المباعة')),
-                      DataColumn(label: Text('السعر/لتر')),
-                      DataColumn(label: Text('الإجمالي (ج.س)')),
-                    ],
-                    rows: state.pumpDataList.map((p) {
-                      final pid = p.pump.id!;
-                      final litersSold = _getPumpLitersSold(pid);
-                      final rowTotal = litersSold * p.activePrice;
-                      final isBenzin = p.tank.fuelType == 'بنزين';
-                      final fuelColor =
-                          isBenzin ? AppTheme.benzinColor : AppTheme.dieselColor;
-
-                      return DataRow(
-                        cells: [
-                          DataCell(Row(
-                            children: [
-                              CircleAvatar(
-                                radius: 12,
-                                backgroundColor: fuelColor.withValues(alpha: 0.15),
-                                child: Text(
-                                  '${p.pump.nozzleNumber}',
-                                  style: TextStyle(
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.bold,
-                                    color: fuelColor,
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              Text(p.pump.name, style: const TextStyle(fontWeight: FontWeight.bold)),
-                            ],
-                          )),
-                          DataCell(Text(
-                            p.tank.fuelType,
-                            style: TextStyle(color: fuelColor, fontWeight: FontWeight.bold),
-                          )),
-                          DataCell(SizedBox(
-                            width: 100,
-                            child: TextFormField(
-                              controller: _prevMeterControllers[pid],
-                              keyboardType: TextInputType.number,
-                              decoration: const InputDecoration(
-                                isDense: true,
-                                contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-                              ),
-                              onChanged: (_) => setState(() {}),
-                              validator: (v) => v == null || double.tryParse(v) == null
-                                  ? 'خطأ'
-                                  : null,
-                            ),
-                          )),
-                          DataCell(SizedBox(
-                            width: 120,
-                            child: TextFormField(
-                              controller: _currMeterControllers[pid],
-                              keyboardType: TextInputType.number,
-                              decoration: const InputDecoration(
-                                isDense: true,
-                                contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-                              ),
-                              onChanged: (_) => setState(() {}),
-                              validator: (v) {
-                                if (v == null || double.tryParse(v) == null) return 'قيمة خاطئة';
-                                final curr = double.tryParse(v)!;
-                                final prev = double.tryParse(_prevMeterControllers[pid]?.text ?? '') ?? 0;
-                                if (curr < prev) return 'أقل من السابق';
-                                return null;
-                              },
-                            ),
-                          )),
-                          DataCell(Text(
-                            numberFormat.format(litersSold),
-                            style: const TextStyle(fontWeight: FontWeight.bold),
-                          )),
-                          DataCell(Text('${currencyFormat.format(p.activePrice)} ج.س')),
-                          DataCell(Text(
-                            currencyFormat.format(rowTotal),
-                            style: const TextStyle(
-                              fontWeight: FontWeight.bold,
-                              color: AppTheme.primaryNavy,
-                            ),
-                          )),
+            LayoutBuilder(
+              builder: (context, constraints) {
+                final isMobile = constraints.maxWidth < 768;
+                if (isMobile) {
+                  return _buildMobileNozzleCards(state, numberFormat, currencyFormat);
+                }
+                return Card(
+                  child: Padding(
+                    padding: const EdgeInsets.all(12.0),
+                    child: SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: DataTable(
+                        columnSpacing: 24,
+                        columns: const [
+                          DataColumn(label: Text('الفوهة')),
+                          DataColumn(label: Text('النوع')),
+                          DataColumn(label: Text('العداد السابق')),
+                          DataColumn(label: Text('العداد الحالي (القفل)')),
+                          DataColumn(label: Text('اللترات المباعة')),
+                          DataColumn(label: Text('السعر/لتر')),
+                          DataColumn(label: Text('الإجمالي (ج.س)')),
                         ],
-                      );
-                    }).toList(),
+                        rows: state.pumpDataList.map((p) {
+                          final pid = p.pump.id!;
+                          final litersSold = _getPumpLitersSold(pid);
+                          final rowTotal = litersSold * p.activePrice;
+                          final isBenzin = p.tank.fuelType == 'بنزين';
+                          final fuelColor =
+                              isBenzin ? AppTheme.benzinColor : AppTheme.dieselColor;
+
+                          return DataRow(
+                            cells: [
+                              DataCell(Row(
+                                children: [
+                                  CircleAvatar(
+                                    radius: 12,
+                                    backgroundColor: fuelColor.withValues(alpha: 0.15),
+                                    child: Text(
+                                      '${p.pump.nozzleNumber}',
+                                      style: TextStyle(
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.bold,
+                                        color: fuelColor,
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Text(p.pump.name, style: const TextStyle(fontWeight: FontWeight.bold)),
+                                ],
+                              )),
+                              DataCell(Text(
+                                p.tank.fuelType,
+                                style: TextStyle(color: fuelColor, fontWeight: FontWeight.bold),
+                              )),
+                              DataCell(SizedBox(
+                                width: 100,
+                                child: TextFormField(
+                                  controller: _prevMeterControllers[pid],
+                                  keyboardType: TextInputType.number,
+                                  decoration: const InputDecoration(
+                                    isDense: true,
+                                    contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                                  ),
+                                  onChanged: (_) => setState(() {}),
+                                  validator: (v) => v == null || double.tryParse(v) == null
+                                      ? 'خطأ'
+                                      : null,
+                                ),
+                              )),
+                              DataCell(SizedBox(
+                                width: 120,
+                                child: TextFormField(
+                                  controller: _currMeterControllers[pid],
+                                  keyboardType: TextInputType.number,
+                                  decoration: const InputDecoration(
+                                    isDense: true,
+                                    contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                                  ),
+                                  onChanged: (_) => setState(() {}),
+                                  validator: (v) {
+                                    if (v == null || double.tryParse(v) == null) return 'قيمة خاطئة';
+                                    final curr = double.tryParse(v)!;
+                                    final prev = double.tryParse(_prevMeterControllers[pid]?.text ?? '') ?? 0;
+                                    if (curr < prev) return 'أقل من السابق';
+                                    return null;
+                                  },
+                                ),
+                              )),
+                              DataCell(Text(
+                                numberFormat.format(litersSold),
+                                style: const TextStyle(fontWeight: FontWeight.bold),
+                              )),
+                              DataCell(Text('${currencyFormat.format(p.activePrice)} ج.س')),
+                              DataCell(Text(
+                                currencyFormat.format(rowTotal),
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  color: AppTheme.primaryNavy,
+                                ),
+                              )),
+                            ],
+                          );
+                        }).toList(),
+                      ),
+                    ),
                   ),
-                ),
-              ),
+                );
+              },
             ),
             const SizedBox(height: 24),
 
@@ -731,7 +739,116 @@ class _ShiftCloseScreenState extends State<ShiftCloseScreen>
                 ),
               ),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 20),
+
+            // Live Variance & Settlement Breakdown
+            Builder(
+              builder: (context) {
+                final isDark = Theme.of(context).brightness == Brightness.dark;
+                final cashAmt = double.tryParse(_cashController.text) ?? 0.0;
+                final bankAmt = double.tryParse(_bankTransferController.text) ?? 0.0;
+                final creditAmt = double.tryParse(_creditController.text) ?? 0.0;
+                final totalEntered = cashAmt + bankAmt + creditAmt;
+                final variance = totalEntered - totalShiftRevenue;
+                final isMatched = variance.abs() < 1.0;
+                final isDeficit = variance < -1.0;
+
+                final statusColor = isMatched
+                    ? AppTheme.successGreen
+                    : (isDeficit ? AppTheme.dangerRed : AppTheme.primaryCyan);
+
+                return Container(
+                  margin: const EdgeInsets.only(bottom: 20),
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: isDark ? AppTheme.darkCard : Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: statusColor.withValues(alpha: isDark ? 0.4 : 0.3),
+                      width: 1.5,
+                    ),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Row(
+                            children: [
+                              Icon(
+                                isMatched
+                                    ? Icons.check_circle_rounded
+                                    : (isDeficit ? Icons.error_rounded : Icons.info_rounded),
+                                color: statusColor,
+                                size: 20,
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                isMatched
+                                    ? 'المطابقة تامة'
+                                    : (isDeficit ? 'يوجد عجز مالي' : 'يوجد فائض نقدي'),
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 14,
+                                  color: statusColor,
+                                ),
+                              ),
+                            ],
+                          ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+                            decoration: BoxDecoration(
+                              color: statusColor.withValues(alpha: 0.15),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: Text(
+                              '${variance >= 0 ? "+" : ""}${currencyFormat.format(variance)} ج.س',
+                              style: TextStyle(
+                                fontWeight: FontWeight.w900,
+                                fontSize: 13,
+                                color: statusColor,
+                                fontFamily: 'monospace',
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Flexible(
+                            child: Text(
+                              'إجمالي العدادات: ${currencyFormat.format(totalShiftRevenue)} ج.س',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: isDark ? AppTheme.textMuted : AppTheme.textDim,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Flexible(
+                            child: Text(
+                              'المحصل: ${currencyFormat.format(totalEntered)} ج.س',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                                color: isDark ? AppTheme.textLight : AppTheme.textDark,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
 
             // Submit Button
             SizedBox(
@@ -775,6 +892,210 @@ class _ShiftCloseScreenState extends State<ShiftCloseScreen>
     );
   }
 
+  Widget _buildMobileNozzleCards(
+    ShiftState state,
+    NumberFormat numberFormat,
+    NumberFormat currencyFormat,
+  ) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return Column(
+      children: state.pumpDataList.map((p) {
+        final pid = p.pump.id!;
+        final litersSold = _getPumpLitersSold(pid);
+        final rowTotal = litersSold * p.activePrice;
+        final isBenzin = p.tank.fuelType == 'بنزين';
+        final fuelColor = isBenzin ? AppTheme.benzinColor : AppTheme.dieselColor;
+
+        return Container(
+          margin: const EdgeInsets.only(bottom: 12),
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: isDark ? AppTheme.darkCard : Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: fuelColor.withValues(alpha: isDark ? 0.35 : 0.25),
+              width: 1.2,
+            ),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Nozzle Badge & Fuel Type
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Row(
+                    children: [
+                      CircleAvatar(
+                        radius: 14,
+                        backgroundColor: fuelColor.withValues(alpha: isDark ? 0.25 : 0.15),
+                        child: Text(
+                          '${p.pump.nozzleNumber}',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                            color: fuelColor,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        p.pump.name,
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                          color: isDark ? AppTheme.textLight : AppTheme.textDark,
+                        ),
+                      ),
+                    ],
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: fuelColor.withValues(alpha: isDark ? 0.2 : 0.12),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: fuelColor.withValues(alpha: 0.3)),
+                    ),
+                    child: Text(
+                      '${p.tank.fuelType} • ${currencyFormat.format(p.activePrice)} ج.س/L',
+                      style: TextStyle(
+                        color: fuelColor,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 11,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+
+              // Inputs: Previous Meter & Current Meter
+              Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'العداد السابق (L)',
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: isDark ? AppTheme.textMuted : AppTheme.textDim,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        TextFormField(
+                          controller: _prevMeterControllers[pid],
+                          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                          decoration: InputDecoration(
+                            isDense: true,
+                            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                            fillColor: isDark ? AppTheme.darkCardLighter : Colors.grey.shade100,
+                          ),
+                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, fontFamily: 'monospace'),
+                          onChanged: (_) => setState(() {}),
+                          validator: (v) => v == null || double.tryParse(v) == null ? 'خطأ' : null,
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'عداد القفل الحالي (L)',
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold,
+                            color: isDark ? AppTheme.primaryCyan : AppTheme.primaryBlue,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        TextFormField(
+                          controller: _currMeterControllers[pid],
+                          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                          decoration: InputDecoration(
+                            isDense: true,
+                            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide(color: fuelColor, width: 2),
+                            ),
+                          ),
+                          style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 14, fontFamily: 'monospace'),
+                          onChanged: (_) => setState(() {}),
+                          validator: (v) {
+                            if (v == null || double.tryParse(v) == null) return 'قيمة خاطئة';
+                            final curr = double.tryParse(v)!;
+                            final prev = double.tryParse(_prevMeterControllers[pid]?.text ?? '') ?? 0;
+                            if (curr < prev) return 'أقل من السابق';
+                            return null;
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 10),
+
+              // Live Calculations: Liters sold & Revenue
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                decoration: BoxDecoration(
+                  color: isDark ? AppTheme.darkCardLighter : Colors.blue.shade50,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Row(
+                      children: [
+                        Text(
+                          'المباع: ',
+                          style: TextStyle(fontSize: 11.5, color: isDark ? AppTheme.textMuted : AppTheme.textDim),
+                        ),
+                        Text(
+                          '${numberFormat.format(litersSold)} L',
+                          style: TextStyle(
+                            fontWeight: FontWeight.w900,
+                            fontSize: 13,
+                            color: isDark ? AppTheme.primaryCyan : AppTheme.primaryBlue,
+                            fontFamily: 'monospace',
+                          ),
+                        ),
+                      ],
+                    ),
+                    Row(
+                      children: [
+                        Text(
+                          'الإجمالي: ',
+                          style: TextStyle(fontSize: 11.5, color: isDark ? AppTheme.textMuted : AppTheme.textDim),
+                        ),
+                        Text(
+                          '${currencyFormat.format(rowTotal)} ج.س',
+                          style: TextStyle(
+                            fontWeight: FontWeight.w900,
+                            fontSize: 13.5,
+                            color: isDark ? AppTheme.successGreen : Colors.green.shade800,
+                            fontFamily: 'monospace',
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        );
+      }).toList(),
+    );
+  }
+
   Widget _buildTankDipCard(
     TankShiftInitData tankData,
     ShiftState state,
@@ -814,8 +1135,23 @@ class _ShiftCloseScreenState extends State<ShiftCloseScreen>
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text('المسطرة السابقة: ${numberFormat.format(tankData.previousDip)} لتر'),
-                Text('الوارد أثناء الوردية: ${numberFormat.format(tankData.deliveredDuringShift)} لتر'),
+                Flexible(
+                  child: Text(
+                    'المسطرة السابقة: ${numberFormat.format(tankData.previousDip)} لتر',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(fontSize: 11.5),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Flexible(
+                  child: Text(
+                    'الوارد: ${numberFormat.format(tankData.deliveredDuringShift)} لتر',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(fontSize: 11.5),
+                  ),
+                ),
               ],
             ),
             const SizedBox(height: 10),

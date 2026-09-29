@@ -59,41 +59,43 @@ class _CashBoxScreenState extends State<CashBoxScreen> {
           builder: (context, setDialogState) {
             return AlertDialog(
               title: const Text('تسجيل إيداع / سحب يدوي من الخزنة'),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  DropdownButtonFormField<String>(
-                    initialValue: _txnType,
-                    decoration: const InputDecoration(labelText: 'نوع العملية'),
-                    items: const [
-                      DropdownMenuItem(value: 'in', child: Text('إيداع نقدية إضافي (وارد)')),
-                      DropdownMenuItem(value: 'out', child: Text('سحب نقدية يدوي (منصرف)')),
-                    ],
-                    onChanged: (v) {
-                      if (v != null) {
-                        setDialogState(() {
-                          _txnType = v;
-                        });
-                      }
-                    },
-                  ),
-                  const SizedBox(height: 12),
-                  TextFormField(
-                    controller: _amountController,
-                    keyboardType: TextInputType.number,
-                    decoration: const InputDecoration(
-                      labelText: 'المبلغ (ج.س)',
-                      suffixText: 'ج.س',
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    DropdownButtonFormField<String>(
+                      initialValue: _txnType,
+                      decoration: const InputDecoration(labelText: 'نوع العملية'),
+                      items: const [
+                        DropdownMenuItem(value: 'in', child: Text('إيداع نقدية إضافي (وارد)')),
+                        DropdownMenuItem(value: 'out', child: Text('سحب نقدية يدوي (منصرف)')),
+                      ],
+                      onChanged: (v) {
+                        if (v != null) {
+                          setDialogState(() {
+                            _txnType = v;
+                          });
+                        }
+                      },
                     ),
-                  ),
-                  const SizedBox(height: 12),
-                  TextFormField(
-                    controller: _notesController,
-                    decoration: const InputDecoration(
-                      labelText: 'البيان / سبب العملية',
+                    const SizedBox(height: 12),
+                    TextFormField(
+                      controller: _amountController,
+                      keyboardType: TextInputType.number,
+                      decoration: const InputDecoration(
+                        labelText: 'المبلغ (ج.س)',
+                        suffixText: 'ج.س',
+                      ),
                     ),
-                  ),
-                ],
+                    const SizedBox(height: 12),
+                    TextFormField(
+                      controller: _notesController,
+                      decoration: const InputDecoration(
+                        labelText: 'البيان / سبب العملية',
+                      ),
+                    ),
+                  ],
+                ),
               ),
               actions: [
                 TextButton(
@@ -133,22 +135,31 @@ class _CashBoxScreenState extends State<CashBoxScreen> {
     final authState = context.watch<AuthBloc>().state;
     final currentUser = authState is AuthAuthenticated ? authState.user : null;
     final canAdjustManually = currentUser?.can(AppPermission.adjustCashBoxManually) ?? false;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isMobile = screenWidth < 600;
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text(
-          'إدارة الخزنة النقدية اليومية والترحيل التلقائي',
-          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+        title: Text(
+          isMobile ? 'الخزنة النقدية والترحيل' : 'إدارة الخزنة النقدية اليومية والترحيل التلقائي',
+          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
         ),
         actions: [
           if (canAdjustManually)
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-              child: ElevatedButton.icon(
-                onPressed: () => _showManualTxnDialog(context),
-                icon: const Icon(Icons.swap_horiz_rounded, color: Colors.white),
-                label: const Text('إيداع / سحب يدوي'),
-              ),
+              padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
+              child: isMobile
+                  ? IconButton(
+                      icon: const Icon(Icons.swap_horiz_rounded),
+                      tooltip: 'إيداع / سحب يدوي',
+                      onPressed: () => _showManualTxnDialog(context),
+                    )
+                  : ElevatedButton.icon(
+                      onPressed: () => _showManualTxnDialog(context),
+                      icon: const Icon(Icons.swap_horiz_rounded, color: Colors.white),
+                      label: const Text('إيداع / سحب يدوي'),
+                    ),
             ),
         ],
       ),
@@ -179,7 +190,7 @@ class _CashBoxScreenState extends State<CashBoxScreen> {
             final today = state.todayBox;
 
             return SingleChildScrollView(
-              padding: const EdgeInsets.all(24.0),
+              padding: EdgeInsets.all(isMobile ? 16.0 : 24.0),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -187,9 +198,11 @@ class _CashBoxScreenState extends State<CashBoxScreen> {
                   Container(
                     padding: const EdgeInsets.all(14),
                     decoration: BoxDecoration(
-                      color: Colors.green.shade50,
+                      color: isDark ? AppTheme.successGreen.withValues(alpha: 0.15) : Colors.green.shade50,
                       borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: Colors.green.shade200),
+                      border: Border.all(
+                        color: isDark ? AppTheme.successGreen.withValues(alpha: 0.3) : Colors.green.shade200,
+                      ),
                     ),
                     child: Row(
                       children: [
@@ -198,7 +211,10 @@ class _CashBoxScreenState extends State<CashBoxScreen> {
                         Expanded(
                           child: Text(
                             'تاريخ اليوم: ${today.date}. الرصيد الافتتاحي (${currencyFormat.format(today.openingBalance)} ج.س) تم ترحيله تلقائياً من إغلاق اليوم السابق.',
-                            style: const TextStyle(fontSize: 13, color: AppTheme.primaryNavy),
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: isDark ? AppTheme.textLight : AppTheme.primaryNavy,
+                            ),
                           ),
                         ),
                       ],
@@ -206,45 +222,56 @@ class _CashBoxScreenState extends State<CashBoxScreen> {
                   ),
                   const SizedBox(height: 20),
 
-                  // 4 Stat Cards
-                  Row(
-                    children: [
-                      Expanded(
-                        child: StatCard(
-                          title: 'الرصيد الافتتاحي (بداية اليوم)',
-                          value: '${currencyFormat.format(today.openingBalance)} ج.س',
-                          icon: Icons.account_balance_wallet_outlined,
-                          color: Colors.indigo,
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: StatCard(
-                          title: 'إجمالي الوارد (مبيعات + تحصيل)',
-                          value: '${currencyFormat.format(today.cashIn)} ج.س',
-                          icon: Icons.arrow_downward,
-                          color: AppTheme.successGreen,
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: StatCard(
-                          title: 'إجمالي المنصرف (مصروفات وسحب)',
-                          value: '${currencyFormat.format(today.cashOut)} ج.س',
-                          icon: Icons.arrow_upward,
-                          color: AppTheme.dangerRed,
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: StatCard(
-                          title: 'الرصيد الختامي الحالي في الخزنة',
-                          value: '${currencyFormat.format(today.closingBalance)} ج.س',
-                          icon: Icons.account_balance,
-                          color: AppTheme.primaryBlue,
-                        ),
-                      ),
-                    ],
+                  // Responsive Stat Cards
+                  LayoutBuilder(
+                    builder: (context, constraints) {
+                      final itemWidth = constraints.maxWidth < 600
+                          ? (constraints.maxWidth - 12) / 2
+                          : (constraints.maxWidth - 36) / 4;
+
+                      return Wrap(
+                        spacing: 12,
+                        runSpacing: 12,
+                        children: [
+                          SizedBox(
+                            width: itemWidth,
+                            child: StatCard(
+                              title: 'الرصيد الافتتاحي (بداية اليوم)',
+                              value: '${currencyFormat.format(today.openingBalance)} ج.س',
+                              icon: Icons.account_balance_wallet_outlined,
+                              color: Colors.indigo,
+                            ),
+                          ),
+                          SizedBox(
+                            width: itemWidth,
+                            child: StatCard(
+                              title: 'إجمالي الوارد (مبيعات + تحصيل)',
+                              value: '${currencyFormat.format(today.cashIn)} ج.س',
+                              icon: Icons.arrow_downward,
+                              color: AppTheme.successGreen,
+                            ),
+                          ),
+                          SizedBox(
+                            width: itemWidth,
+                            child: StatCard(
+                              title: 'إجمالي المنصرف (مصروفات وسحب)',
+                              value: '${currencyFormat.format(today.cashOut)} ج.س',
+                              icon: Icons.arrow_upward,
+                              color: AppTheme.dangerRed,
+                            ),
+                          ),
+                          SizedBox(
+                            width: itemWidth,
+                            child: StatCard(
+                              title: 'الرصيد الختامي الحالي في الخزنة',
+                              value: '${currencyFormat.format(today.closingBalance)} ج.س',
+                              icon: Icons.account_balance,
+                              color: AppTheme.primaryBlue,
+                            ),
+                          ),
+                        ],
+                      );
+                    },
                   ),
                   const SizedBox(height: 32),
 
