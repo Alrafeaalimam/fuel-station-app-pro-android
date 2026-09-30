@@ -22,8 +22,8 @@ class BackupRepository {
     try {
       final path = await getDatabasePath();
       final file = File(path);
-      if (await file.exists()) {
-        return await file.length();
+      if (file.existsSync()) {
+        return file.lengthSync();
       }
     } catch (_) {}
     return 0;
@@ -70,8 +70,10 @@ class BackupRepository {
     final dbPath = await getDatabasePath();
     final parentDir = dirname(dbPath);
     final autoDir = Directory(join(parentDir, 'auto_backups'));
-    if (!await autoDir.exists()) {
-      await autoDir.create(recursive: true);
+    if (!autoDir.existsSync()) {
+      try {
+        autoDir.createSync(recursive: true);
+      } catch (_) {}
     }
     return autoDir.path;
   }
@@ -176,9 +178,9 @@ class BackupRepository {
   Future<List<File>> getAutoBackups() async {
     try {
       final autoDir = Directory(await getAutoBackupsDirectoryPath());
-      if (!await autoDir.exists()) return [];
+      if (!autoDir.existsSync()) return [];
 
-      final entities = await autoDir.list().toList();
+      final entities = autoDir.listSync();
       final files = entities
           .whereType<File>()
           .where((f) => basename(f.path).startsWith('fuel_station_auto_') && f.path.endsWith('.db'))

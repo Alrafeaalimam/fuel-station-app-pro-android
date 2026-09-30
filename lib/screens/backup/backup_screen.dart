@@ -307,9 +307,12 @@ class _BackupScreenState extends State<BackupScreen> {
       );
     }
 
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isMobile = screenWidth < 600;
+
     return Scaffold(
       body: Padding(
-        padding: const EdgeInsets.all(24.0),
+        padding: EdgeInsets.all(isMobile ? 16.0 : 24.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -317,19 +320,28 @@ class _BackupScreenState extends State<BackupScreen> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'النسخ الاحتياطي واستعادة البيانات',
-                      style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: AppTheme.primaryNavy),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'حماية بيانات المحطة عبر النسخ اليدوي الخارجي والنسخ التلقائي اليومي',
-                      style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
-                    ),
-                  ],
+                const Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'النسخ الاحتياطي واستعادة البيانات',
+                        style: TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFFFFFFFF), // High-contrast crisp white (#FFFFFF)
+                        ),
+                      ),
+                      SizedBox(height: 4),
+                      Text(
+                        'حماية بيانات المحطة عبر النسخ اليدوي الخارجي والنسخ التلقائي اليومي',
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: Color(0xFF94A3B8), // Cool gray (#94A3B8)
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
                 IconButton.filledTonal(
                   onPressed: _loadBackupInfo,
@@ -368,62 +380,152 @@ class _BackupScreenState extends State<BackupScreen> {
   }
 
   Widget _buildWeeklyReminderBanner(UserModel user) {
+    final descriptionText = _lastManualBackupDate == null
+        ? 'لم يتم عمل أي نسخة احتياطية يدوية حتى الآن. يُرجى حفظ نسخة على فلاشة USB أو سحابة.'
+        : 'آخر نسخة يدوية مسجلة كانت بتاريخ: ${DateFormat('yyyy-MM-dd HH:mm').format(_lastManualBackupDate!)} (منذ أكثر من 7 أيام).';
+
     return Container(
+      width: double.infinity,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.amber.shade50,
+        color: const Color(0xFFFFFBEB), // Amber-50
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.amber.shade300, width: 1.5),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: Colors.amber.shade100,
-              shape: BoxShape.circle,
-            ),
-            child: Icon(Icons.warning_amber_rounded, color: Colors.amber.shade900, size: 28),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'تذكير أسبوعي هام: يُوصى بعمل نسخة احتياطية يدوية جديدة',
-                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Colors.amber.shade900),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  _lastManualBackupDate == null
-                      ? 'لم يتم عمل أي نسخة احتياطية يدوية حتى الآن. يُرجى حفظ نسخة على فلاشة USB أو سحابة.'
-                      : 'آخر نسخة يدوية مسجلة كانت بتاريخ: ${DateFormat('yyyy-MM-dd HH:mm').format(_lastManualBackupDate!)} (منذ أكثر من 7 أيام).',
-                  style: TextStyle(fontSize: 13, color: Colors.brown.shade700),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 12),
-          ElevatedButton.icon(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.amber.shade800,
-              foregroundColor: Colors.white,
-            ),
-            onPressed: () => _handleManualBackup(user),
-            icon: const Icon(Icons.backup_rounded, size: 16),
-            label: const Text('نسخ الآن'),
-          ),
-          const SizedBox(width: 8),
-          TextButton(
-            onPressed: () => setState(() {
-              _showWeeklyReminder = false;
-              _isDismissedThisSession = true;
-            }),
-            child: const Text('تجاهل مؤقتاً', style: TextStyle(color: Colors.black54)),
+        border: Border.all(color: const Color(0xFFFCD34D), width: 1.5), // Amber-300
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
           ),
         ],
+      ),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final isNarrow = constraints.maxWidth < 650;
+
+          final iconWidget = Container(
+            padding: const EdgeInsets.all(10),
+            decoration: const BoxDecoration(
+              color: Color(0xFFFEF3C7), // Amber-100
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(
+              Icons.warning_amber_rounded,
+              color: Color(0xFF92400E), // Amber-800
+              size: 28,
+            ),
+          );
+
+          final textContent = Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text(
+                'تذكير أسبوعي هام: يُوصى بعمل نسخة احتياطية يدوية جديدة',
+                textAlign: TextAlign.right,
+                softWrap: true,
+                style: TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF78350F), // Amber-900 (WCAG AAA)
+                  height: 1.3,
+                ),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                descriptionText,
+                textAlign: TextAlign.right,
+                softWrap: true,
+                style: const TextStyle(
+                  fontSize: 13,
+                  color: Color(0xFF92400E), // Amber-800 (WCAG AAA)
+                  height: 1.4,
+                ),
+              ),
+            ],
+          );
+
+          final actionButtons = Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: [
+              ElevatedButton.icon(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFFB45309), // Amber-700
+                  foregroundColor: Colors.white,
+                  elevation: 0,
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+                onPressed: () => _handleManualBackup(user),
+                icon: const Icon(Icons.backup_rounded, size: 16),
+                label: const Text(
+                  'نسخ الآن',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                ),
+              ),
+              TextButton(
+                style: TextButton.styleFrom(
+                  foregroundColor: const Color(0xFF78350F),
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                ),
+                onPressed: () => setState(() {
+                  _showWeeklyReminder = false;
+                  _isDismissedThisSession = true;
+                }),
+                child: const Text(
+                  'تجاهل مؤقتاً',
+                  style: TextStyle(
+                    color: Color(0xFF78350F),
+                    fontWeight: FontWeight.w600,
+                    fontSize: 13,
+                  ),
+                ),
+              ),
+            ],
+          );
+
+          if (isNarrow) {
+            // Mobile standard layout: [Icon on Right] [Title & Description in Center (flex: 1)]
+            // Actions / Buttons placed cleanly at bottom
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    iconWidget,
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: textContent,
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 14),
+                actionButtons,
+              ],
+            );
+          }
+
+          // Desktop/Tablet standard horizontal layout:
+          // [Icon on Right] [Title & Description in Center] [Actions/Buttons at Left]
+          return Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              iconWidget,
+              const SizedBox(width: 16),
+              Expanded(
+                child: textContent,
+              ),
+              const SizedBox(width: 16),
+              actionButtons,
+            ],
+          );
+        },
       ),
     );
   }
@@ -433,9 +535,10 @@ class _BackupScreenState extends State<BackupScreen> {
 
     return Card(
       elevation: 0,
+      color: AppTheme.darkCard,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
-        side: BorderSide(color: Colors.grey.shade200),
+        side: const BorderSide(color: AppTheme.darkBorder),
       ),
       child: Padding(
         padding: const EdgeInsets.all(20.0),
@@ -444,67 +547,112 @@ class _BackupScreenState extends State<BackupScreen> {
           children: [
             const Row(
               children: [
-                Icon(Icons.storage_rounded, color: AppTheme.primaryBlue, size: 22),
+                Icon(Icons.storage_rounded, color: AppTheme.primaryCyan, size: 22),
                 SizedBox(width: 8),
-                Text(
-                  'حالة قاعدة البيانات الحالية',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppTheme.primaryNavy),
+                Expanded(
+                  child: Text(
+                    'حالة قاعدة البيانات الحالية',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
+                  ),
                 ),
               ],
             ),
-            const Divider(height: 24),
-            Row(
-              children: [
-                Expanded(
-                  child: Column(
+            const Divider(height: 24, color: AppTheme.darkBorder),
+            LayoutBuilder(
+              builder: (context, cardConstraints) {
+                final isCardNarrow = cardConstraints.maxWidth < 500;
+                if (isCardNarrow) {
+                  return Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('مسار قاعدة البيانات النشطة:', style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
+                      const Text('مسار قاعدة البيانات النشطة:', style: TextStyle(fontSize: 12, color: Color(0xFF94A3B8))),
                       const SizedBox(height: 4),
                       SelectableText(
                         _dbPath ?? 'جاري التحميل...',
-                        style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, fontFamily: 'monospace'),
+                        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, fontFamily: 'monospace', color: Colors.white),
+                      ),
+                      const SizedBox(height: 12),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: AppTheme.darkCardLighter,
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: AppTheme.darkBorderLight),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Text('حجم البيانات: ', style: TextStyle(fontSize: 11, color: Color(0xFF94A3B8))),
+                            const SizedBox(width: 4),
+                            Text(
+                              _formatFileSize(_dbSize),
+                              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppTheme.accentCyan),
+                            ),
+                          ],
+                        ),
                       ),
                     ],
-                  ),
-                ),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  decoration: BoxDecoration(
-                    color: Colors.grey.shade100,
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Column(
-                    children: [
-                      Text('حجم البيانات', style: TextStyle(fontSize: 11, color: Colors.grey.shade600)),
-                      const SizedBox(height: 2),
-                      Text(
-                        _formatFileSize(_dbSize),
-                        style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: AppTheme.primaryNavy),
+                  );
+                }
+
+                return Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text('مسار قاعدة البيانات النشطة:', style: TextStyle(fontSize: 12, color: Color(0xFF94A3B8))),
+                          const SizedBox(height: 4),
+                          SelectableText(
+                            _dbPath ?? 'جاري التحميل...',
+                            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, fontFamily: 'monospace', color: Colors.white),
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
-                ),
-              ],
+                    ),
+                    const SizedBox(width: 12),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: AppTheme.darkCardLighter,
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: AppTheme.darkBorderLight),
+                      ),
+                      child: Column(
+                        children: [
+                          const Text('حجم البيانات', style: TextStyle(fontSize: 11, color: Color(0xFF94A3B8))),
+                          const SizedBox(height: 2),
+                          Text(
+                            _formatFileSize(_dbSize),
+                            style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: AppTheme.accentCyan),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                );
+              },
             ),
             const SizedBox(height: 14),
-            Row(
+            Wrap(
+              crossAxisAlignment: WrapCrossAlignment.center,
+              spacing: 6,
+              runSpacing: 4,
               children: [
                 Icon(
                   _lastManualBackupDate != null ? Icons.check_circle_rounded : Icons.info_outline_rounded,
                   size: 18,
                   color: _lastManualBackupDate != null ? AppTheme.successGreen : Colors.orange,
                 ),
-                const SizedBox(width: 6),
-                Text(
+                const Text(
                   'آخر نسخة احتياطية يدوية: ',
-                  style: TextStyle(fontSize: 13, color: Colors.grey.shade700),
+                  style: TextStyle(fontSize: 13, color: Color(0xFF94A3B8)),
                 ),
                 Text(
                   _lastManualBackupDate != null
                       ? dateFormat.format(_lastManualBackupDate!)
                       : 'لا توجد نسخة يدوية سابقة مسجلة',
-                  style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
+                  style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.white),
                 ),
               ],
             ),
@@ -600,40 +748,71 @@ class _BackupScreenState extends State<BackupScreen> {
   Widget _buildAutoBackupsSection(UserModel user) {
     return Card(
       elevation: 0,
+      color: AppTheme.darkCard,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
-        side: BorderSide(color: Colors.grey.shade200),
+        side: const BorderSide(color: AppTheme.darkBorder),
       ),
       child: Padding(
         padding: const EdgeInsets.all(20.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Row(
-                  children: [
-                    Icon(Icons.auto_mode_rounded, color: Colors.indigo, size: 22),
-                    SizedBox(width: 8),
-                    Text(
-                      'النسخ الاحتياطي التلقائي (عند قفل الورديات)',
-                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppTheme.primaryNavy),
-                    ),
-                  ],
-                ),
-                Container(
+            LayoutBuilder(
+              builder: (context, headerConstraints) {
+                final isAutoHeaderNarrow = headerConstraints.maxWidth < 450;
+                final badge = Container(
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                   decoration: BoxDecoration(
-                    color: Colors.indigo.withValues(alpha: 0.1),
+                    color: AppTheme.primaryCyan.withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: AppTheme.primaryCyan.withValues(alpha: 0.3)),
                   ),
                   child: Text(
                     'العدد: ${_autoBackups.length} / 14 كحد أقصى',
-                    style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.indigo),
+                    style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppTheme.primaryCyan),
                   ),
-                ),
-              ],
+                );
+
+                if (isAutoHeaderNarrow) {
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Row(
+                        children: [
+                          Icon(Icons.auto_mode_rounded, color: AppTheme.primaryCyan, size: 22),
+                          SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              'النسخ الاحتياطي التلقائي (عند قفل الورديات)',
+                              style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Colors.white),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      badge,
+                    ],
+                  );
+                }
+
+                return Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Row(
+                      children: [
+                        Icon(Icons.auto_mode_rounded, color: AppTheme.primaryCyan, size: 22),
+                        SizedBox(width: 8),
+                        Text(
+                          'النسخ الاحتياطي التلقائي (عند قفل الورديات)',
+                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
+                        ),
+                      ],
+                    ),
+                    badge,
+                  ],
+                );
+              },
             ),
             const SizedBox(height: 12),
 
@@ -662,13 +841,13 @@ class _BackupScreenState extends State<BackupScreen> {
             const SizedBox(height: 16),
 
             if (_autoBackups.isEmpty)
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: 24),
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 24),
                 child: Center(
                   child: Text(
                     'لم يتم إنشاء نسخ تلقائية بعد.\nستظهر أول نسخة تلقائية تلقائياً فور قفل أول وردية بنجاح.',
                     textAlign: TextAlign.center,
-                    style: TextStyle(color: Colors.grey.shade500, fontSize: 13),
+                    style: TextStyle(color: Color(0xFF94A3B8), fontSize: 13),
                   ),
                 ),
               )
@@ -677,34 +856,81 @@ class _BackupScreenState extends State<BackupScreen> {
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
                 itemCount: _autoBackups.length,
-                separatorBuilder: (context, index) => const Divider(height: 1),
+                separatorBuilder: (context, index) => const Divider(height: 1, color: AppTheme.darkBorder),
                 itemBuilder: (context, index) {
                   final file = _autoBackups[index];
                   final filename = p.basename(file.path);
                   final stat = file.statSync();
 
-                  return ListTile(
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    leading: const CircleAvatar(
-                      backgroundColor: Colors.indigoAccent,
-                      radius: 18,
-                      child: Icon(Icons.backup_table_rounded, color: Colors.white, size: 18),
-                    ),
-                    title: Text(filename, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-                    subtitle: Text(
-                      'التاريخ: ${DateFormat('yyyy-MM-dd HH:mm').format(stat.modified)} | الحجم: ${_formatFileSize(stat.size)}',
-                      style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
-                    ),
-                    trailing: ElevatedButton.icon(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.indigo.shade50,
-                        foregroundColor: Colors.indigo.shade800,
-                        elevation: 0,
-                      ),
-                      icon: const Icon(Icons.restore_rounded, size: 16),
-                      label: const Text('استعادة هذه النسخة'),
-                      onPressed: () => _handleRestoreBackup(user, directFilePath: file.path),
-                    ),
+                  return LayoutBuilder(
+                    builder: (context, itemConstraints) {
+                      final isItemNarrow = itemConstraints.maxWidth < 480;
+                      final restoreBtn = ElevatedButton.icon(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppTheme.primaryBlue.withValues(alpha: 0.2),
+                          foregroundColor: AppTheme.primaryCyan,
+                          elevation: 0,
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        ),
+                        icon: const Icon(Icons.restore_rounded, size: 16),
+                        label: const Text('استعادة هذه النسخة', style: TextStyle(fontSize: 12)),
+                        onPressed: () => _handleRestoreBackup(user, directFilePath: file.path),
+                      );
+
+                      if (isItemNarrow) {
+                        return Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  const CircleAvatar(
+                                    backgroundColor: AppTheme.primaryBlue,
+                                    radius: 16,
+                                    child: Icon(Icons.backup_table_rounded, color: Colors.white, size: 16),
+                                  ),
+                                  const SizedBox(width: 10),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(filename, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.white)),
+                                        const SizedBox(height: 2),
+                                        Text(
+                                          'التاريخ: ${DateFormat('yyyy-MM-dd HH:mm').format(stat.modified)} | الحجم: ${_formatFileSize(stat.size)}',
+                                          style: const TextStyle(fontSize: 11, color: Color(0xFF94A3B8)),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 8),
+                              SizedBox(
+                                width: double.infinity,
+                                child: restoreBtn,
+                              ),
+                            ],
+                          ),
+                        );
+                      }
+
+                      return ListTile(
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        leading: const CircleAvatar(
+                          backgroundColor: AppTheme.primaryBlue,
+                          radius: 18,
+                          child: Icon(Icons.backup_table_rounded, color: Colors.white, size: 18),
+                        ),
+                        title: Text(filename, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.white)),
+                        subtitle: Text(
+                          'التاريخ: ${DateFormat('yyyy-MM-dd HH:mm').format(stat.modified)} | الحجم: ${_formatFileSize(stat.size)}',
+                          style: const TextStyle(fontSize: 11, color: Color(0xFF94A3B8)),
+                        ),
+                        trailing: restoreBtn,
+                      );
+                    },
                   );
                 },
               ),

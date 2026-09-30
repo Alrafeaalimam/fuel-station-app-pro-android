@@ -80,33 +80,3 @@ jobs:
           name: fuel-station-pro-android-release
           path: release_artifacts/*
 
-      - name: Publish GitHub Release
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          TAG_NAME="v1.0.1"
-          if [[ "${{ github.ref }}" == refs/tags/* ]]; then
-            TAG_NAME="${{ github.ref_name }}"
-          fi
-
-          NOTES="### نظام إدارة محطة الوقود Pro - تحديث Android \$TAG_NAME
-
-          ✅ إصدار موقّع رسمياً ومتوافق كتحديث مباشر فوق الإصدار السابق
-          - **ملف الـ APK المباشر:** \`FuelStationPro-\$TAG_NAME.apk\`
-          - **ملف حزمة التطبيق (App Bundle):** \`FuelStationPro-\$TAG_NAME.aab\`
-          - **اسم التطبيق على الهاتف:** نظام إدارة محطة الوقود
-          - **معرّف الحزمة:** \`com.alrafea.fuel_station_pro\`
-          - **التحسينات الجديدة في هذا التحديث:**
-            - إصلاح شريط التطبيق العلوي (Top Header) ليتوافق ديناميكياً مع Android SafeArea ونوتش الشاشة وفتحة الكاميرا.
-            - تنسيق هوية المحطة في المنتصف بشكل متجاوب لمنع أي تجاوز نصوص على شاشات 360px وما فوقها.
-            - إعادة تصميم شريط الفترة التجريبية (Trial Banner) في سطر مدمج متناسق أسفل الهيدر مباشرة بارتفاع 40dp.
-            - زر حساب المستخدم المضغوط المعتمد على قائمة خيارات سريعة لتغيير كلمة المرور وتسجيل الخروج.
-            - الحفاظ على نفس شهادة التوقيع ومعرف الحزمة لضمان التحديث المباشر دون حذف النسخة السابقة."
-
-          # Delete existing release/tag with same name if needed to overwrite, or create release
-          gh release view "$TAG_NAME" >/dev/null 2>&1 && gh release delete "$TAG_NAME" --cleanup-tag --yes || true
-          gh release create "$TAG_NAME" \
-            release_artifacts/FuelStationPro-v1.0.1.apk \
-            release_artifacts/FuelStationPro-v1.0.1.aab \
-            --title "Fuel Station Pro Android $TAG_NAME" \
-            --notes "$NOTES"

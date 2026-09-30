@@ -57,10 +57,11 @@ class _LoginScreenState extends State<LoginScreen> {
             },
             builder: (context, state) {
               final isLoading = state is AuthLoading;
+              final isCompact = MediaQuery.of(context).size.width < 420;
 
               return Container(
                 constraints: const BoxConstraints(maxWidth: 440),
-                padding: const EdgeInsets.all(32.0),
+                padding: EdgeInsets.all(isCompact ? 20.0 : 32.0),
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(16),
@@ -201,58 +202,119 @@ class _LoginScreenState extends State<LoginScreen> {
                       Container(
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          color: Colors.grey.shade100,
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: Colors.grey.shade300),
+                          color: const Color(0xFFF8FAFC),
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: const Color(0xFFCBD5E1), width: 1),
                         ),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
-                              'حسابات تجريبية سريعة:',
-                              style: TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.grey.shade700,
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            Row(
+                            const Row(
                               children: [
-                                Expanded(
-                                  child: OutlinedButton(
-                                    style: OutlinedButton.styleFrom(
-                                      padding: const EdgeInsets.symmetric(vertical: 8),
-                                    ),
-                                    onPressed: () {
-                                      _usernameController.text = 'admin';
-                                      _passwordController.text = 'admin123';
-                                      _submit();
-                                    },
-                                    child: const Text(
-                                      'مدير (Admin)',
-                                      style: TextStyle(fontSize: 12),
-                                    ),
-                                  ),
+                                Icon(
+                                  Icons.flash_on_rounded,
+                                  size: 16,
+                                  color: Color(0xFF0F172A),
                                 ),
-                                const SizedBox(width: 8),
+                                SizedBox(width: 6),
                                 Expanded(
-                                  child: OutlinedButton(
-                                    style: OutlinedButton.styleFrom(
-                                      padding: const EdgeInsets.symmetric(vertical: 8),
-                                    ),
-                                    onPressed: () {
-                                      _usernameController.text = 'accountant';
-                                      _passwordController.text = 'acc123';
-                                      _submit();
-                                    },
-                                    child: const Text(
-                                      'محاسب (Accountant)',
-                                      style: TextStyle(fontSize: 12),
+                                  child: Text(
+                                    'حسابات تجريبية سريعة:',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.bold,
+                                      color: Color(0xFF0F172A),
                                     ),
                                   ),
                                 ),
                               ],
+                            ),
+                            const SizedBox(height: 10),
+                            LayoutBuilder(
+                              builder: (context, constraints) {
+                                final isNarrow = constraints.maxWidth < 270;
+
+                                final adminBtn = OutlinedButton.icon(
+                                  style: OutlinedButton.styleFrom(
+                                    backgroundColor: const Color(0xFFFFFFFF),
+                                    foregroundColor: const Color(0xFF0F172A),
+                                    side: const BorderSide(color: Color(0xFFCBD5E1), width: 1),
+                                    padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    elevation: 0,
+                                  ),
+                                  onPressed: () {
+                                    _usernameController.text = 'admin';
+                                    _passwordController.text = 'admin123';
+                                    _submit();
+                                  },
+                                  icon: const Icon(
+                                    Icons.admin_panel_settings_rounded,
+                                    size: 16,
+                                    color: Color(0xFF0F172A),
+                                  ),
+                                  label: const Text(
+                                    'مدير النظام',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w600,
+                                      color: Color(0xFF0F172A),
+                                    ),
+                                  ),
+                                );
+
+                                final accountantBtn = OutlinedButton.icon(
+                                  style: OutlinedButton.styleFrom(
+                                    backgroundColor: const Color(0xFFFFFFFF),
+                                    foregroundColor: const Color(0xFF0F172A),
+                                    side: const BorderSide(color: Color(0xFFCBD5E1), width: 1),
+                                    padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    elevation: 0,
+                                  ),
+                                  onPressed: () {
+                                    _usernameController.text = 'accountant';
+                                    _passwordController.text = 'acc123';
+                                    _submit();
+                                  },
+                                  icon: const Icon(
+                                    Icons.point_of_sale_rounded,
+                                    size: 16,
+                                    color: Color(0xFF0F172A),
+                                  ),
+                                  label: const Text(
+                                    'محاسب الوردية',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w600,
+                                      color: Color(0xFF0F172A),
+                                    ),
+                                  ),
+                                );
+
+                                if (isNarrow) {
+                                  return Column(
+                                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                                    children: [
+                                      adminBtn,
+                                      const SizedBox(height: 8),
+                                      accountantBtn,
+                                    ],
+                                  );
+                                }
+
+                                return Row(
+                                  children: [
+                                    Expanded(child: adminBtn),
+                                    const SizedBox(width: 8),
+                                    Expanded(child: accountantBtn),
+                                  ],
+                                );
+                              },
                             ),
                           ],
                         ),
